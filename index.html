@@ -742,15 +742,7 @@
             <div id="game-map-name" class="font-medium text-red-400"></div>
         </div>
 
-        <!-- Quick Chat (in-game) -->
-        <div id="quick-chat" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 flex gap-2 z-[160]">
-            <button onclick="sendQuickChat('Nice!')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">Nice!</button>
-            <button onclick="sendQuickChat('Rush B!')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">Rush B!</button>
-            <button onclick="sendQuickChat('Headshot!')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">Headshot!</button>
-            <button onclick="sendQuickChat('GG WP')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">GG WP</button>
-        </div>
-    </div>
-
+     
     <!-- Game Over Modal -->
     <div id="game-over-modal" onclick="if (event.target.id === 'game-over-modal') hideGameOver()" class="hidden fixed inset-0 bg-black/70 z-[200] flex items-center justify-center">
         <div onclick="event.stopImmediatePropagation()" class="game-over-modal bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md p-8 mx-4">
