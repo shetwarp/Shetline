@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -574,6 +573,7 @@
             <div class="flex gap-2 mb-6">
                 <button onclick="showShopTab('guns')" class="shop-tab active px-6 py-2.5 text-sm font-bold rounded-2xl bg-red-600" id="tab-guns">اسلحه‌ها</button>
                 <button onclick="showShopTab('skins')" class="shop-tab px-6 py-2.5 text-sm font-bold rounded-2xl bg-slate-700 hover:bg-slate-600" id="tab-skins">اسکین‌ها</button>
+                <button onclick="showShopTab('armor')" class="shop-tab px-6 py-2.5 text-sm font-bold rounded-2xl bg-slate-700 hover:bg-slate-600" id="tab-armor">ارمور</button>
             </div>
             
             <!-- Guns Tab -->
@@ -583,6 +583,11 @@
             
             <!-- Skins Tab -->
             <div id="shop-skins" class="shop-content hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+                <!-- Populated dynamically by JS -->
+            </div>
+
+            <!-- Armor Tab -->
+            <div id="shop-armor" class="shop-content hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 <!-- Populated dynamically by JS -->
             </div>
         </div>
@@ -847,8 +852,10 @@
             playerName: "Player_1337",
             equippedGun: "pistol",
             equippedSkin: "red",
+            equippedArmor: null,
             ownedGuns: ["pistol"],
             ownedSkins: ["red"],
+            ownedArmors: [],
             leaderboard: [],
             selectedMap: "dust2",
             currentGame: null,
@@ -939,6 +946,21 @@
             { id: "pink", price: 400 },
             { id: "black", price: 450 },
             { id: "white", price: 380 }
+        ];
+
+        // ==================== ARMOR SYSTEM ====================
+        const ARMORS = {
+            kevlar: { name: "Kevlar Vest", protection: 0.25, desc: "۲۵٪ کاهش آسیب از گلوله‌ها", icon: "fa-shield-alt" },
+            helmet: { name: "Tactical Helmet", protection: 0.15, desc: "۱۵٪ کاهش آسیب سر", icon: "fa-hard-hat" },
+            full: { name: "Full Body Armor", protection: 0.40, desc: "۴۰٪ کاهش آسیب کلی", icon: "fa-user-shield" },
+            tactical: { name: "Tactical Vest", protection: 0.30, desc: "۳۰٪ کاهش آسیب + مقاومت بیشتر", icon: "fa-shield-virus" }
+        };
+
+        const SHOP_ARMORS = [
+            { id: "kevlar", price: 750, desc: "۲۵٪ کاهش آسیب از گلوله‌ها" },
+            { id: "helmet", price: 450, desc: "۱۵٪ کاهش آسیب سر" },
+            { id: "full", price: 1500, desc: "۴۰٪ کاهش آسیب کلی - بهترین انتخاب" },
+            { id: "tactical", price: 980, desc: "۳۰٪ کاهش آسیب + مقاومت بیشتر" }
         ];
         
         let currentSection = 'menu';
@@ -1270,8 +1292,10 @@
                 playerName: username,
                 equippedGun: "pistol",
                 equippedSkin: "red",
+                equippedArmor: null,
                 ownedGuns: ["pistol"],
                 ownedSkins: ["red"],
+                ownedArmors: [],
                 leaderboard: [],
                 selectedMap: "dust2"
             };
@@ -1395,6 +1419,8 @@
             
             if (!gameState.ownedGuns) gameState.ownedGuns = ["pistol"];
             if (!gameState.ownedSkins) gameState.ownedSkins = ["red"];
+            if (!gameState.ownedArmors) gameState.ownedArmors = [];
+            if (!gameState.equippedArmor) gameState.equippedArmor = null;
             if (!gameState.leaderboard) gameState.leaderboard = [];
             
             // Level system defaults
@@ -1792,6 +1818,50 @@
                 `;
                 skinsContainer.appendChild(card);
             });
+
+            // Armor Tab
+            const armorContainer = document.getElementById('shop-armor');
+            if (armorContainer) {
+                armorContainer.innerHTML = '';
+                
+                SHOP_ARMORS.forEach(item => {
+                    const armorData = ARMORS[item.id];
+                    const isOwned = gameState.ownedArmors.includes(item.id);
+                    const isEquipped = gameState.equippedArmor === item.id;
+                    
+                    const card = document.createElement('div');
+                    card.className = `shop-item bg-slate-800 border ${isOwned ? 'border-emerald-500 owned' : 'border-slate-700'} rounded-3xl p-5`;
+                    
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="font-extrabold text-xl flex items-center gap-x-2">
+                                    <i class="fa-solid ${armorData.icon} text-sky-400"></i> 
+                                    <span>${armorData.name}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-0.5">${item.desc}</div>
+                            </div>
+                            ${isOwned ? 
+                                `<div class="px-3 py-1 text-xs ${isEquipped ? 'bg-emerald-600' : 'bg-sky-600'} text-white rounded-2xl font-bold flex items-center">${isEquipped ? 'مجهز' : 'مالک'}</div>` : 
+                                `<div class="text-right"><span class="font-mono text-lg font-bold text-yellow-400">${item.price}</span><span class="text-xs block text-yellow-400/70">سکه</span></div>`
+                            }
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-xs mb-4">
+                            <div class="flex items-center gap-x-2 text-slate-300">
+                                <i class="fa-solid fa-shield-alt text-sky-400"></i>
+                                <span>محافظت: <span class="font-bold text-sky-400">${Math.round(armorData.protection * 100)}%</span></span>
+                            </div>
+                        </div>
+                        
+                        ${isOwned ? 
+                            `<button onclick="equipArmor('${item.id}')" class="w-full py-2.5 text-sm font-bold rounded-2xl border ${isEquipped ? 'border-emerald-600 text-emerald-400' : 'border-sky-600 text-sky-400 hover:bg-sky-950'}">${isEquipped ? 'هم‌اکنون مجهز است' : 'مجهز کردن ارمور'}</button>` :
+                            `<button onclick="buyItem('armor', '${item.id}', ${item.price})" class="w-full cs-button py-2.5 text-sm font-extrabold rounded-2xl">خرید ارمور</button>`
+                        }
+                    `;
+                    armorContainer.appendChild(card);
+                });
+            }
         }
         
         function showShopTab(tab) {
@@ -1799,6 +1869,8 @@
             
             document.getElementById('shop-guns').classList.toggle('hidden', tab !== 'guns');
             document.getElementById('shop-skins').classList.toggle('hidden', tab !== 'skins');
+            const armorDiv = document.getElementById('shop-armor');
+            if (armorDiv) armorDiv.classList.toggle('hidden', tab !== 'armor');
             
             document.getElementById('tab-guns').classList.toggle('active', tab === 'guns');
             document.getElementById('tab-guns').classList.toggle('bg-red-600', tab === 'guns');
@@ -1807,6 +1879,13 @@
             document.getElementById('tab-skins').classList.toggle('active', tab === 'skins');
             document.getElementById('tab-skins').classList.toggle('bg-red-600', tab === 'skins');
             document.getElementById('tab-skins').classList.toggle('bg-slate-700', tab !== 'skins');
+            
+            const armorTab = document.getElementById('tab-armor');
+            if (armorTab) {
+                armorTab.classList.toggle('active', tab === 'armor');
+                armorTab.classList.toggle('bg-red-600', tab === 'armor');
+                armorTab.classList.toggle('bg-slate-700', tab !== 'armor');
+            }
         }
         
         function buyItem(type, id, price) {
@@ -1823,6 +1902,9 @@
             } else if (type === 'skin') {
                 if (!gameState.ownedSkins.includes(id)) gameState.ownedSkins.push(id);
                 gameState.equippedSkin = id;
+            } else if (type === 'armor') {
+                if (!gameState.ownedArmors.includes(id)) gameState.ownedArmors.push(id);
+                gameState.equippedArmor = id;
             }
             
             saveGameState();
@@ -1830,7 +1912,11 @@
             renderShop();
             
             // Nice toast
-            showToast(`خرید موفق! ${type === 'gun' ? GUNS[id].name : SKINS[id].name} به موجودی‌ات اضافه شد.`);
+            let itemName = '';
+            if (type === 'gun') itemName = GUNS[id].name;
+            else if (type === 'skin') itemName = SKINS[id].name;
+            else if (type === 'armor') itemName = ARMORS[id].name;
+            showToast(`خرید موفق! ${itemName} به موجودی‌ات اضافه شد.`);
         }
         
         function equipGun(id) {
@@ -1845,6 +1931,13 @@
             saveGameState();
             renderShop();
             showToast(`اسکین ${SKINS[id].name} فعال شد!`);
+        }
+        
+        function equipArmor(id) {
+            gameState.equippedArmor = id;
+            saveGameState();
+            renderShop();
+            showToast(`ارمور ${ARMORS[id].name} مجهز شد! محافظت فعال است.`);
         }
         
         function showToast(message) {
@@ -2637,7 +2730,11 @@ function startOfflineGame() {
                     // Collision with player
                     const distToPlayer = Math.hypot(e.x - player.x, e.y - player.y);
                     if (distToPlayer < player.size + e.size - 2) {
-                        player.health -= 0.9 * delta;
+                        let dmg = 0.9 * delta;
+                        if (gameState.equippedArmor && ARMORS[gameState.equippedArmor]) {
+                            dmg *= (1 - ARMORS[gameState.equippedArmor].protection);
+                        }
+                        player.health -= dmg;
                         if (player.health <= 0) {
                             endGame(false);
                             return;
@@ -2722,7 +2819,11 @@ function startOfflineGame() {
                     const dx = bullet.x - player.x;
                     const dy = bullet.y - player.y;
                     if (Math.hypot(dx, dy) < player.size + bullet.size + 1) {
-                        player.health -= bullet.damage * 0.85;
+                        let dmg = bullet.damage * 0.85;
+                        if (gameState.equippedArmor && ARMORS[gameState.equippedArmor]) {
+                            dmg *= (1 - ARMORS[gameState.equippedArmor].protection);
+                        }
+                        player.health -= dmg;
                         bullets.splice(b, 1);
                         
                         if (player.health <= 0) {
@@ -2937,44 +3038,134 @@ function startOfflineGame() {
                 ctx.ellipse(player.x + 4, player.y + 11, player.size * 0.95, player.size * 0.42, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Legs (walking animation)
+                // === IMPROVED REALISTIC CS SKIN SYSTEM ===
+                const skinId = gameState.equippedSkin || 'red';
+                let bodyCol = player.color;
+                let vestCol = '#334155';
+                let helmetCol = '#1e2937';
+                let accentCol = '#64748b';
+                let isNeon = false;
+                let isGold = false;
+
+                if (skinId === 'red')      { bodyCol = '#b91c1c'; vestCol = '#7f1d1d'; accentCol = '#f87171'; }
+                else if (skinId === 'blue')   { bodyCol = '#1e40af'; vestCol = '#1e3a8a'; accentCol = '#60a5fa'; }
+                else if (skinId === 'green')  { bodyCol = '#166534'; vestCol = '#14532d'; accentCol = '#4ade80'; }
+                else if (skinId === 'purple') { bodyCol = '#6b21a8'; vestCol = '#4c1d95'; accentCol = '#c026d3'; isNeon = true; }
+                else if (skinId === 'gold')   { bodyCol = '#854d0e'; vestCol = '#713f12'; accentCol = '#fbbf24'; isGold = true; }
+                else if (skinId === 'orange') { bodyCol = '#c2410f'; vestCol = '#9a3412'; accentCol = '#fb923c'; }
+                else if (skinId === 'cyan')   { bodyCol = '#0e7490'; vestCol = '#164e63'; accentCol = '#67e8f9'; isNeon = true; }
+                else if (skinId === 'pink')   { bodyCol = '#9d174d'; vestCol = '#831843'; accentCol = '#f472b6'; isNeon = true; }
+                else if (skinId === 'black')  { bodyCol = '#111827'; vestCol = '#0f172a'; accentCol = '#475569'; }
+                else if (skinId === 'white')  { bodyCol = '#e0e7ff'; vestCol = '#64748b'; accentCol = '#f1e7d2'; }
+
+                // Legs (walking animation) - tactical pants
                 ctx.strokeStyle = '#1e2937';
-                ctx.lineWidth = 4;
+                ctx.lineWidth = 4.5;
                 ctx.lineCap = 'round';
-                // Left leg
                 ctx.beginPath();
                 ctx.moveTo(player.x - 6, player.y + 8);
                 ctx.lineTo(player.x - 6 + legSwing * 0.6, player.y + 18 + Math.abs(legSwing) * 0.3);
                 ctx.stroke();
-                // Right leg
                 ctx.beginPath();
                 ctx.moveTo(player.x + 6, player.y + 8);
                 ctx.lineTo(player.x + 6 - legSwing * 0.6, player.y + 18 + Math.abs(legSwing) * 0.3);
                 ctx.stroke();
-                
-                // Body (more realistic torso)
-                ctx.fillStyle = player.color;
+
+                // Boots detail
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(player.x - 9, player.y + 15, 7, 5);
+                ctx.fillRect(player.x + 2, player.y + 15, 7, 5);
+
+                // === TORSO / VEST (real CS style) ===
+                // Main body shirt
+                ctx.fillStyle = bodyCol;
                 ctx.beginPath();
-                ctx.ellipse(player.x, player.y + 2, player.size * 0.95, player.size * 1.15, 0, 0, Math.PI * 2);
+                ctx.ellipse(player.x, player.y + 3, player.size * 0.92, player.size * 1.12, 0, 0, Math.PI * 2);
                 ctx.fill();
-                
-                // Head / helmet (better shape)
+
+                // Tactical vest / chest rig (darker overlay)
+                ctx.fillStyle = vestCol;
+                ctx.beginPath();
+                ctx.ellipse(player.x, player.y + 1, player.size * 0.72, player.size * 0.88, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Chest pouches / rig details (classic CS look)
                 ctx.fillStyle = '#1e2937';
+                ctx.fillRect(player.x - 9, player.y - 1, 6, 7);   // left pouch
+                ctx.fillRect(player.x + 3, player.y - 1, 6, 7);   // right pouch
+                ctx.fillRect(player.x - 2, player.y + 7, 4, 6);   // center mag pouch
+
+                // Shoulder pads / armor plates
+                ctx.fillStyle = vestCol;
                 ctx.beginPath();
-                ctx.ellipse(player.x, player.y - 6, player.size * 0.72, player.size * 0.78, 0, 0, Math.PI * 2);
+                ctx.ellipse(player.x - 12, player.y - 2, 7, 10, -0.35, 0, Math.PI * 2);
                 ctx.fill();
-                // Helmet shine
-                ctx.fillStyle = 'rgba(255,255,255,0.15)';
                 ctx.beginPath();
-                ctx.ellipse(player.x - 4, player.y - 9, player.size * 0.35, player.size * 0.25, -0.6, 0, Math.PI * 2);
+                ctx.ellipse(player.x + 12, player.y - 2, 7, 10, 0.35, 0, Math.PI * 2);
                 ctx.fill();
-                
+
+                // === HELMET (detailed tactical helmet) ===
+                ctx.fillStyle = helmetCol;
+                ctx.beginPath();
+                ctx.ellipse(player.x, player.y - 7, player.size * 0.68, player.size * 0.76, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Helmet visor / rim
+                ctx.strokeStyle = accentCol;
+                ctx.lineWidth = 2.8;
+                ctx.beginPath();
+                ctx.ellipse(player.x, player.y - 5, player.size * 0.52, player.size * 0.32, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Helmet top shine / detail
+                ctx.fillStyle = 'rgba(255,255,255,0.18)';
+                ctx.beginPath();
+                ctx.ellipse(player.x - 5, player.y - 10, player.size * 0.32, player.size * 0.22, -0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // === SKIN SPECIAL EFFECTS (neon / gold) ===
+                if (isNeon) {
+                    ctx.strokeStyle = accentCol;
+                    ctx.lineWidth = 1.8;
+                    ctx.shadowColor = accentCol;
+                    ctx.shadowBlur = 7;
+                    // Neon chest line
+                    ctx.beginPath();
+                    ctx.moveTo(player.x - 8, player.y + 4);
+                    ctx.lineTo(player.x + 8, player.y + 4);
+                    ctx.stroke();
+                    // Neon helmet line
+                    ctx.beginPath();
+                    ctx.moveTo(player.x - 6, player.y - 4);
+                    ctx.lineTo(player.x + 6, player.y - 4);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                if (isGold) {
+                    // Luxurious gold trim
+                    ctx.strokeStyle = '#fde047';
+                    ctx.lineWidth = 2.2;
+                    ctx.beginPath();
+                    ctx.ellipse(player.x, player.y + 2, player.size * 0.85, player.size * 1.05, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    // Gold emblem on chest (like pro team logo)
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y + 2, 4.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#854d0e';
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y + 2, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
                 // Aim angle
                 const aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
                 
-                // Arms (holding gun pose)
+                // Arms (holding gun pose) - tactical sleeves
                 ctx.strokeStyle = '#334155';
-                ctx.lineWidth = 5;
+                ctx.lineWidth = 5.5;
                 ctx.lineCap = 'round';
                 // Left arm
                 ctx.beginPath();
@@ -3018,17 +3209,35 @@ function startOfflineGame() {
                     ctx.ellipse(remotePlayer.x + 4, remotePlayer.y + 11, 17, 7, 0, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    // Body
+                    // Body with vest detail
                     ctx.fillStyle = remotePlayer.color;
                     ctx.beginPath();
                     ctx.ellipse(remotePlayer.x, remotePlayer.y + 2, 17, 20, 0, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    // Head
+                    // Vest overlay
+                    ctx.fillStyle = '#1e2937';
+                    ctx.beginPath();
+                    ctx.ellipse(remotePlayer.x, remotePlayer.y + 1, 13, 15, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Simple pouch on remote
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(remotePlayer.x - 5, remotePlayer.y + 3, 4, 5);
+                    ctx.fillRect(remotePlayer.x + 1, remotePlayer.y + 3, 4, 5);
+                    
+                    // Head / helmet
                     ctx.fillStyle = '#1e2937';
                     ctx.beginPath();
                     ctx.ellipse(remotePlayer.x, remotePlayer.y - 6, 12, 13, 0, 0, Math.PI * 2);
                     ctx.fill();
+                    
+                    // Visor line
+                    ctx.strokeStyle = '#64748b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(remotePlayer.x, remotePlayer.y - 4, 8, 5, 0, 0, Math.PI * 2);
+                    ctx.stroke();
                     
                     // Name tag
                     ctx.fillStyle = '#fff';
