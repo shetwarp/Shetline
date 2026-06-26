@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>کانتر استرایک وب | Shetline</title>
+    <title>کانتر استرایک وب | ShetLine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- PeerJS for real P2P Multiplayer -->
@@ -153,8 +153,8 @@
                             <i class="fa-solid fa-crosshairs text-white text-3xl"></i>
                         </div>
                         <div>
-                            <h1 class="text-3xl font-bold tracking-tighter cs-logo">ShetLine</h1>
-                            <p class="text-xs text-red-400 -mt-1">CS WEB</p>
+                            <h1 class="text-3xl font-bold tracking-tighter cs-logo">Shetline</h1>
+                            <p class="text-xs text-red-400 -mt-1">COUNTER STRIKE in the web</p>
                         </div>
                     </div>
                 </div>
@@ -218,8 +218,8 @@
         <!-- ==================== MENU SECTION ==================== -->
         <div id="section-menu" class="section active">
             <div class="text-center mb-10">
-                <h2 class="text-5xl font-black tracking-tighter mb-3">به شت لاین  وب خوش اومدی</h2>
-                <p class="text-xl text-slate-400 max-w-md mx-auto">این جا میتونی یه نسخه سبک و کوچیک یه بازی ساده رو پلی بدی با دوستات یا تنهایی</p>
+                <h2 class="text-5xl font-black tracking-tighter mb-3">به شت لاین وب خوش اومدی</h2>
+                <p class="text-xl text-slate-400 max-w-md mx-auto">اینجا میتونی با دوستات انلاین یه نسخه کوچیک و سبک از کانتر استرایک رو بازی کنید</p>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -372,7 +372,7 @@
                     <div class="flex items-center gap-x-3 mb-5">
                         <div class="px-4 py-1.5 bg-sky-500/10 text-sky-400 rounded-2xl text-sm font-bold flex items-center gap-x-2">
                             <i class="fa-solid fa-globe"></i>
-                            <span>آنلاین واقعی (PeerJS)</span>
+                            <span>لابی انلاین</span>
                         </div>
                     </div>
                     
@@ -480,7 +480,13 @@
                 </table>
             </div>
             
-            
+            <div class="mt-4 text-center">
+                <button onclick="addFakeScore()" class="text-xs px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl border border-slate-600">
+                    <i class="fa-solid fa-plus mr-1"></i> اضافه کردن امتیاز تست
+                </button>
+            </div>
+        </div>
+
         <!-- ==================== MAPS SECTION ==================== -->
         <div id="section-maps" class="section">
             <div class="mb-6">
@@ -556,7 +562,7 @@
         </div>
         
         <div class="hud px-6 py-2 text-xs flex items-center justify-between text-slate-400 border-t border-slate-700">
-            <div> اگر با کاپیوتر بازی میکنید زبان خود را انگلیسی کنید | WASD = حرکت • ماوس = هدف‌گیری • کلیک چپ = شلیک • R = ری‌لود </div>
+            <div>WASD = حرکت • ماوس = هدف‌گیری • کلیک چپ = شلیک • R = ری‌لود</div>
             <div id="game-map-name" class="font-medium text-red-400"></div>
         </div>
     </div>
@@ -2336,7 +2342,7 @@
             if (confirm('آیا مطمئنی می‌خوای خارج شی؟ پیشرفتت ذخیره شده.')) {
                 // Just go back to menu or simulate
                 showSection('menu');
-                showToast('خارج شدی (در این دمو فقط نمایشی است)');
+                showToast('خارج شدی');
             }
         }
         
