@@ -53,6 +53,99 @@
             box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
             image-rendering: crisp-edges;
         }
+
+        /* Virtual Joystick for Mobile */
+        .joystick-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            z-index: 150;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        .joystick-outer {
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            border: 3px solid #475569;
+            border-radius: 9999px;
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
+        
+        .joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(#ef4444, #b91c1c);
+            border: 3px solid #fff;
+            border-radius: 9999px;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 
+                        0 0 0 4px rgba(239, 68, 68, 0.3);
+            transition: transform 0.05s ease;
+            pointer-events: none;
+        }
+        
+        .joystick-knob:active {
+            box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.5);
+        }
+
+        .mobile-shoot-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(#ef4444, #b91c1c);
+            border: 3px solid #fff;
+            border-radius: 9999px;
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 900;
+            font-size: 13px;
+            box-shadow: 0 10px 15px -3px rgb(239 68 68 / 0.4);
+            touch-action: none;
+            user-select: none;
+        }
+        
+        .mobile-shoot-btn:active {
+            transform: scale(0.92);
+            background: #b91c1c;
+        }
+        
+        .mobile-reload-btn {
+            position: fixed;
+            bottom: 105px;
+            right: 25px;
+            width: 52px;
+            height: 52px;
+            background: rgba(71, 85, 105, 0.85);
+            border: 2.5px solid #64748b;
+            border-radius: 9999px;
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e7ff;
+            font-weight: 700;
+            font-size: 11px;
+            box-shadow: 0 6px 10px -2px rgb(0 0 0 / 0.3);
+            touch-action: none;
+        }
+        
+        .mobile-reload-btn:active {
+            transform: scale(0.9);
+            background: #475569;
+        }
         
         .hud {
             background: rgba(15, 23, 42, 0.95);
@@ -166,7 +259,13 @@
                             <i class="fa-solid fa-user text-white text-sm"></i>
                         </div>
                         <div>
-                            <div id="player-name" class="font-semibold text-sm">Player_1337</div>
+                            <div class="flex items-center gap-x-2">
+                                <div id="player-name" onclick="changePlayerName()" class="font-semibold text-sm cursor-pointer hover:text-red-400 transition-colors" title="کلیک کنید برای تغییر نام">Player_1337</div>
+                                <div id="player-level-badge" onclick="showLevelInfo()"
+                                     class="px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full cursor-pointer hover:bg-red-700 transition-colors">
+                                    LVL <span id="player-level">1</span>
+                                </div>
+                            </div>
                             <div class="flex items-center gap-x-1 text-xs">
                                 <i class="fa-solid fa-coins text-yellow-400"></i>
                                 <span id="player-coins" class="font-mono font-bold">2450</span>
@@ -187,31 +286,36 @@
     <div class="max-w-7xl mx-auto px-6 py-8">
         
         <!-- Main Navigation -->
-        <div class="flex flex-wrap gap-2 mb-8 border-b border-slate-700 pb-4">
+        <div class="flex flex-wrap gap-1.5 sm:gap-2 mb-8 border-b border-slate-700 pb-4 overflow-x-auto">
             <button onclick="showSection('menu')" 
-                    class="nav-btn active px-6 py-3 rounded-3xl flex items-center gap-x-2 text-sm font-medium bg-slate-800 border border-slate-600" id="nav-menu">
-                <i class="fa-solid fa-home w-4"></i>
+                    class="nav-btn active px-4 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center gap-x-1.5 sm:gap-x-2 text-xs sm:text-sm font-medium bg-slate-800 border border-slate-600" id="nav-menu">
+                <i class="fa-solid fa-home w-3.5 sm:w-4"></i>
                 <span>منو اصلی</span>
             </button>
             <button onclick="showSection('play')" 
-                    class="nav-btn px-6 py-3 rounded-3xl flex items-center gap-x-2 text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-play">
-                <i class="fa-solid fa-play w-4"></i>
+                    class="nav-btn px-4 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center gap-x-1.5 sm:gap-x-2 text-xs sm:text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-play">
+                <i class="fa-solid fa-play w-3.5 sm:w-4"></i>
                 <span>شروع بازی</span>
             </button>
             <button onclick="showSection('shop')" 
-                    class="nav-btn px-6 py-3 rounded-3xl flex items-center gap-x-2 text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-shop">
-                <i class="fa-solid fa-store w-4"></i>
+                    class="nav-btn px-4 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center gap-x-1.5 sm:gap-x-2 text-xs sm:text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-shop">
+                <i class="fa-solid fa-store w-3.5 sm:w-4"></i>
                 <span>فروشگاه</span>
             </button>
             <button onclick="showSection('leaderboard')" 
-                    class="nav-btn px-6 py-3 rounded-3xl flex items-center gap-x-2 text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-leaderboard">
-                <i class="fa-solid fa-trophy w-4"></i>
+                    class="nav-btn px-4 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center gap-x-1.5 sm:gap-x-2 text-xs sm:text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-leaderboard">
+                <i class="fa-solid fa-trophy w-3.5 sm:w-4"></i>
                 <span>جدول رتبه‌ها</span>
             </button>
             <button onclick="showSection('maps')" 
-                    class="nav-btn px-6 py-3 rounded-3xl flex items-center gap-x-2 text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-maps">
-                <i class="fa-solid fa-map w-4"></i>
+                    class="nav-btn px-4 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center gap-x-1.5 sm:gap-x-2 text-xs sm:text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-maps">
+                <i class="fa-solid fa-map w-3.5 sm:w-4"></i>
                 <span>نقشه‌ها</span>
+            </button>
+            <button onclick="showSection('missions')" 
+                    class="nav-btn px-4 sm:px-6 py-2.5 sm:py-3 rounded-3xl flex items-center gap-x-1.5 sm:gap-x-2 text-xs sm:text-sm font-medium hover:bg-slate-800 border border-slate-600" id="nav-missions">
+                <i class="fa-solid fa-tasks w-3.5 sm:w-4"></i>
+                <span>ماموریت‌ها</span>
             </button>
         </div>
 
@@ -360,10 +464,33 @@
                         </div>
                     </div>
                     
+                    <!-- Game Mode Selector -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">حالت بازی</label>
+                        <div class="grid grid-cols-3 gap-2" id="mode-selector">
+                            <div onclick="selectGameMode('solo', this)" class="mode-btn active border-2 border-red-500 bg-red-950/30 rounded-2xl p-3 text-center cursor-pointer">
+                                <div class="font-bold text-sm">Solo</div>
+                                <div class="text-[10px] text-slate-400">در مقابل ربات‌ها</div>
+                            </div>
+                            <div onclick="selectGameMode('deathmatch', this)" class="mode-btn border-2 border-slate-600 hover:border-slate-400 rounded-2xl p-3 text-center cursor-pointer">
+                                <div class="font-bold text-sm">Deathmatch</div>
+                                <div class="text-[10px] text-slate-400">کیلو بیشتر، سریع‌تر</div>
+                            </div>
+                            <div onclick="selectGameMode('teamdm', this)" class="mode-btn border-2 border-slate-600 hover:border-slate-400 rounded-2xl p-3 text-center cursor-pointer">
+                                <div class="font-bold text-sm">Team DM</div>
+                                <div class="text-[10px] text-slate-400">تیمی vs ربات‌ها</div>
+                            </div>
+                            <div onclick="selectGameMode('bomb', this)" class="mode-btn border-2 border-slate-600 hover:border-slate-400 rounded-2xl p-3 text-center cursor-pointer">
+                                <div class="font-bold text-sm">Bomb</div>
+                                <div class="text-[10px] text-slate-400">بمب‌گذاری</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <button onclick="startOfflineGame()" 
-                            class="mt-7 w-full cs-button py-4 rounded-2xl font-extrabold text-lg flex items-center justify-center gap-x-3">
+                            class="mt-5 w-full cs-button py-4 rounded-2xl font-extrabold text-lg flex items-center justify-center gap-x-3">
                         <i class="fa-solid fa-play"></i>
-                        <span>شروع بازی آفلاین</span>
+                        <span>شروع بازی</span>
                     </button>
                 </div>
                 
@@ -407,6 +534,13 @@
                                         class="px-6 bg-sky-600 hover:bg-sky-700 rounded-2xl font-bold">جوین</button>
                             </div>
                         </div>
+
+                        <!-- Join Random Public -->
+                        <button onclick="joinRandomPublicRoom()" 
+                                class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-2xl font-bold flex items-center justify-center gap-x-2 text-sm">
+                            <i class="fa-solid fa-globe"></i>
+                            <span>جوین رندوم (لابی عمومی)</span>
+                        </button>
                         
                         <!-- Connection Status -->
                         <div id="peer-status" class="text-center text-sm p-3 bg-slate-950 border border-slate-700 rounded-2xl hidden">
@@ -493,72 +627,127 @@
                 <!-- Populated by JS -->
             </div>
         </div>
+
+        <!-- ==================== MISSIONS SECTION ==================== -->
+        <div id="section-missions" class="section">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold flex items-center gap-x-3">
+                    <i class="fa-solid fa-tasks text-emerald-500"></i>
+                    <span>ماموریت‌ها</span>
+                </h2>
+                <p class="text-slate-400">ماموریت‌ها رو کامل کن و جایزه بگیر!</p>
+            </div>
+            
+            <div id="missions-list" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Populated dynamically by renderMissions() -->
+            </div>
+            
+            <div class="mt-6 bg-slate-900 border border-slate-700 rounded-3xl p-5 text-sm text-slate-400">
+                <i class="fa-solid fa-info-circle mr-2 text-emerald-400"></i>
+                ماموریت‌ها به صورت خودکار پیگیری می‌شن. وقتی کامل بشن جایزه‌ات رو می‌گیری!
+            </div>
+        </div>
     </div>
 
     <!-- ==================== GAME SCREEN ==================== -->
     <div id="game-screen" class="hidden fixed inset-0 bg-black z-[100] flex flex-col">
         <!-- Game HUD -->
-        <div class="hud px-6 py-3 flex items-center justify-between border-b border-slate-700">
-            <div class="flex items-center gap-x-6">
+        <div class="hud px-3 sm:px-6 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-y-2 border-b border-slate-700 text-sm">
+            <div class="flex items-center gap-x-4 sm:gap-x-6 w-full sm:w-auto">
                 <!-- Health -->
-                <div class="flex items-center gap-x-3">
-                    <div class="flex items-center gap-x-2">
-                        <i class="fa-solid fa-heart text-red-500 text-xl"></i>
+                <div class="flex items-center gap-x-2 sm:gap-x-3">
+                    <div class="flex items-center gap-x-1.5">
+                        <i class="fa-solid fa-heart text-red-500 text-lg sm:text-xl"></i>
                         <div>
-                            <div class="text-xs text-slate-400">جان</div>
-                            <div id="game-health" class="font-mono text-2xl font-bold text-red-400">100</div>
+                            <div class="text-[10px] sm:text-xs text-slate-400">جان</div>
+                            <div id="game-health" class="font-mono text-xl sm:text-2xl font-bold text-red-400">100</div>
                         </div>
                     </div>
-                    <div class="w-28 h-2.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="w-20 sm:w-28 h-2 sm:h-2.5 bg-slate-700 rounded-full overflow-hidden">
                         <div id="health-bar" class="h-full bg-red-500 transition-all" style="width: 100%"></div>
                     </div>
                 </div>
                 
                 <!-- Score & Kills -->
-                <div class="flex items-center gap-x-5 text-sm">
+                <div class="flex items-center gap-x-3 sm:gap-x-5 text-xs sm:text-sm">
                     <div>
                         <span class="text-slate-400">امتیاز: </span>
-                        <span id="game-score" class="font-mono font-bold text-emerald-400 text-xl">0</span>
+                        <span id="game-score" class="font-mono font-bold text-emerald-400 text-lg sm:text-xl">0</span>
                     </div>
                     <div>
                         <span class="text-slate-400">کیل: </span>
-                        <span id="game-kills" class="font-mono font-bold text-amber-400 text-xl">0</span>
+                        <span id="game-kills" class="font-mono font-bold text-amber-400 text-lg sm:text-xl">0</span>
                     </div>
                 </div>
             </div>
             
-            <div class="flex items-center gap-x-8">
+            <div class="flex items-center gap-x-4 sm:gap-x-8 w-full sm:w-auto justify-between sm:justify-start">
                 <!-- Current Weapon -->
                 <div class="text-center">
-                    <div id="current-weapon-name" class="font-bold text-red-400 text-sm tracking-wider"></div>
+                    <div id="current-weapon-name" class="font-bold text-red-400 text-xs sm:text-sm tracking-wider"></div>
                     <div class="flex items-baseline justify-center gap-x-1">
-                        <span id="game-ammo" class="font-mono text-3xl font-extrabold">30</span>
-                        <span class="text-slate-400">/ 90</span>
+                        <span id="game-ammo" class="font-mono text-2xl sm:text-3xl font-extrabold">30</span>
+                        <span class="text-slate-400 text-xs sm:text-sm">/ 90</span>
                     </div>
                 </div>
                 
                 <!-- Timer -->
                 <div class="text-center">
-                    <div class="text-xs text-slate-400">زمان باقی‌مانده</div>
-                    <div id="game-timer" class="font-mono text-3xl font-extrabold text-sky-400">03:00</div>
+                    <div class="text-[10px] sm:text-xs text-slate-400">زمان باقی‌مانده</div>
+                    <div id="game-timer" class="font-mono text-2xl sm:text-3xl font-extrabold text-sky-400">03:00</div>
                 </div>
                 
                 <button onclick="endGame()" 
-                        class="px-5 py-2 bg-red-600/90 hover:bg-red-700 text-sm font-bold rounded-2xl flex items-center gap-x-2">
+                        class="px-3 sm:px-5 py-1.5 sm:py-2 bg-red-600/90 hover:bg-red-700 text-xs sm:text-sm font-bold rounded-2xl flex items-center gap-x-1.5 sm:gap-x-2">
                     <i class="fa-solid fa-times"></i>
-                    <span>خروج از بازی</span>
+                    <span class="hidden sm:inline">خروج از بازی</span>
+                    <span class="sm:hidden">خروج</span>
                 </button>
             </div>
         </div>
         
-        <!-- Canvas -->
-        <div class="flex-1 flex items-center justify-center bg-[#0a0f1a] p-4">
+        <!-- Canvas + Mobile Controls -->
+        <div class="flex-1 flex items-center justify-center bg-[#0a0f1a] p-4 relative" id="canvas-container">
             <canvas id="game-canvas" width="900" height="600" class="game-canvas bg-[#111827]"></canvas>
+            
+            <!-- Virtual Joystick (Mobile only) -->
+            <div id="joystick-container" class="joystick-container hidden">
+                <div class="joystick-outer">
+                    <div id="joystick-knob" class="joystick-knob"></div>
+                </div>
+            </div>
+            
+            <!-- Mobile Shoot Button -->
+            <div id="mobile-shoot-btn" 
+                 class="mobile-shoot-btn hidden active:scale-95 transition-transform">
+                <div class="text-center leading-none">
+                    <i class="fa-solid fa-bomb text-2xl mb-0.5"></i>
+                    <div class="text-[10px] font-black tracking-wider">FIRE</div>
+                </div>
+            </div>
+            
+            <!-- Mobile Reload Button -->
+            <div id="mobile-reload-btn" 
+                 class="mobile-reload-btn hidden active:scale-90 transition-transform"
+                 title="ری‌لود">
+                <div class="text-center">
+                    <i class="fa-solid fa-sync-alt text-xl"></i>
+                    <div class="text-[9px] font-black -mt-0.5">R</div>
+                </div>
+            </div>
         </div>
         
-        <div class="hud px-6 py-2 text-xs flex items-center justify-between text-slate-400 border-t border-slate-700">
-            <div>WASD = حرکت • ماوس = هدف‌گیری • کلیک چپ = شلیک • R = ری‌لود</div>
+        <div class="hud px-3 sm:px-6 py-2 text-[10px] sm:text-xs flex flex-wrap items-center justify-between gap-x-2 text-slate-400 border-t border-slate-700">
+            <div>    اگر با کامپیوتر بازی میکنید زبان خود مرورگر خود را به انگلیسی تغییر دهید| WASD/جهت = حرکت • ماوس/تاچ = هدف‌گیری • کلیک/تاچ = شلیک • R = ری‌لود</div>
             <div id="game-map-name" class="font-medium text-red-400"></div>
+        </div>
+
+        <!-- Quick Chat (in-game) -->
+        <div id="quick-chat" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 flex gap-2 z-[160]">
+            <button onclick="sendQuickChat('Nice!')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">Nice!</button>
+            <button onclick="sendQuickChat('Rush B!')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">Rush B!</button>
+            <button onclick="sendQuickChat('Headshot!')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">Headshot!</button>
+            <button onclick="sendQuickChat('GG WP')" class="px-4 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs rounded-2xl border border-slate-600">GG WP</button>
         </div>
     </div>
 
@@ -593,6 +782,72 @@
         </div>
     </div>
 
+    <!-- Auth Modal (Login / Register) -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/80 z-[300] flex items-center justify-center">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md mx-4 p-8">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-crosshairs text-white text-4xl"></i>
+                </div>
+                <h2 class="text-3xl font-black">ShetLine</h2>
+                <p class="text-slate-400 text-sm">ورود یا ثبت‌نام برای شروع بازی</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-6 bg-slate-800 rounded-2xl p-1">
+                <button onclick="switchAuthTab('login')" id="auth-tab-login"
+                        class="flex-1 py-2.5 text-sm font-bold rounded-2xl bg-red-600">ورود</button>
+                <button onclick="switchAuthTab('register')" id="auth-tab-register"
+                        class="flex-1 py-2.5 text-sm font-bold rounded-2xl hover:bg-slate-700">ثبت‌نام</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="auth-login-form">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">نام کاربری</label>
+                        <input id="login-username" type="text" placeholder="مثال: Player_1337"
+                               class="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">رمز عبور</label>
+                        <input id="login-password" type="password" placeholder="رمز عبور"
+                               class="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-red-500">
+                    </div>
+                    <button onclick="loginUser()" 
+                            class="w-full cs-button py-3.5 rounded-2xl font-extrabold text-lg">ورود به حساب</button>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="auth-register-form" class="hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">نام کاربری</label>
+                        <input id="register-username" type="text" placeholder="نام کاربری دلخواه"
+                               class="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">رمز عبور</label>
+                        <input id="register-password" type="password" placeholder="رمز عبور (حداقل ۴ کاراکتر)"
+                               class="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">تکرار رمز عبور</label>
+                        <input id="register-password2" type="password" placeholder="رمز عبور را تکرار کنید"
+                               class="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-red-500">
+                    </div>
+                    <button onclick="registerUser()" 
+                            class="w-full py-3.5 rounded-2xl font-extrabold text-lg bg-emerald-600 hover:bg-emerald-700">ثبت‌نام و شروع بازی</button>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center text-xs text-slate-500">
+                اطلاعات شما به صورت محلی در مرورگر ذخیره می‌شود
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==================== GAME DATA & STATE ====================
         let gameState = {
@@ -604,7 +859,13 @@
             ownedSkins: ["red"],
             leaderboard: [],
             selectedMap: "dust2",
-            currentGame: null
+            currentGame: null,
+            // Level & XP System
+            level: 1,
+            xp: 0,
+            xpToNext: 120,
+            totalKills: 0,
+            gamesPlayed: 0
         };
         
         const MAPS = {
@@ -631,7 +892,18 @@
             smg: { name: "SMG", damage: 11, fireRate: 85, ammo: 28, maxAmmo: 28, reloadTime: 1100, color: "#a78bfa", icon: "fa-gun", type: "ranged" },
             ak47: { name: "AK-47", damage: 32, fireRate: 280, ammo: 18, maxAmmo: 18, reloadTime: 1400, color: "#ef4444", icon: "fa-crosshairs", type: "ranged" },
             sniper: { name: "AWP Sniper", damage: 95, fireRate: 850, ammo: 5, maxAmmo: 5, reloadTime: 1800, color: "#eab308", icon: "fa-crosshairs", type: "ranged", zoom: true },
-            knife: { name: "Knife", damage: 65, fireRate: 350, ammo: Infinity, maxAmmo: Infinity, reloadTime: 0, color: "#64748b", icon: "fa-cut", type: "melee" }
+            knife: { name: "Knife", damage: 65, fireRate: 350, ammo: Infinity, maxAmmo: Infinity, reloadTime: 0, color: "#64748b", icon: "fa-cut", type: "melee" },
+            // 10 New Guns Added
+            m4a1: { name: "M4A1", damage: 28, fireRate: 240, ammo: 25, maxAmmo: 25, reloadTime: 1200, color: "#3b82f6", icon: "fa-gun", type: "ranged" },
+            deagle: { name: "Desert Eagle", damage: 48, fireRate: 380, ammo: 7, maxAmmo: 7, reloadTime: 1100, color: "#f59e0b", icon: "fa-hand-gun", type: "ranged" },
+            p90: { name: "P90", damage: 14, fireRate: 70, ammo: 50, maxAmmo: 50, reloadTime: 1600, color: "#8b5cf6", icon: "fa-gun", type: "ranged" },
+            shotgun: { name: "Nova Shotgun", damage: 65, fireRate: 650, ammo: 8, maxAmmo: 8, reloadTime: 1500, color: "#ef4444", icon: "fa-crosshairs", type: "ranged" },
+            aug: { name: "AUG", damage: 26, fireRate: 260, ammo: 30, maxAmmo: 30, reloadTime: 1300, color: "#22c55e", icon: "fa-gun", type: "ranged" },
+            mp5: { name: "MP5", damage: 13, fireRate: 90, ammo: 30, maxAmmo: 30, reloadTime: 1000, color: "#a78bfa", icon: "fa-gun", type: "ranged" },
+            famas: { name: "FAMAS", damage: 19, fireRate: 180, ammo: 25, maxAmmo: 25, reloadTime: 1250, color: "#eab308", icon: "fa-gun", type: "ranged" },
+            m249: { name: "M249 SAW", damage: 22, fireRate: 110, ammo: 100, maxAmmo: 100, reloadTime: 2200, color: "#64748b", icon: "fa-gun", type: "ranged" },
+            scar: { name: "SCAR-H", damage: 35, fireRate: 300, ammo: 20, maxAmmo: 20, reloadTime: 1350, color: "#f97316", icon: "fa-crosshairs", type: "ranged" },
+            g3sg1: { name: "G3SG1", damage: 42, fireRate: 420, ammo: 15, maxAmmo: 15, reloadTime: 1500, color: "#eab308", icon: "fa-crosshairs", type: "ranged" }
         };
         
         const SKINS = {
@@ -651,7 +923,18 @@
             { id: "smg", price: 650, desc: "نرخ آتش بالا، مناسب مبارزه نزدیک", stats: "دقت: خوب • سرعت: عالی" },
             { id: "ak47", price: 1250, desc: "قدرت تخریب بالا، کلاسیک کانتر", stats: "دقت: متوسط • قدرت: بسیار بالا" },
             { id: "sniper", price: 1850, desc: "تک شلیک مرگبار از فاصله دور", stats: "دقت: بسیار بالا • قدرت: وحشتناک" },
-            { id: "knife", price: 420, desc: "چاقوی تاکتیکی برای مبارزه نزدیک", stats: "سرعت: فوق‌العاده • قدرت: بالا در فاصله نزدیک" }
+            { id: "knife", price: 420, desc: "چاقوی تاکتیکی برای مبارزه نزدیک", stats: "سرعت: فوق‌العاده • قدرت: بالا در فاصله نزدیک" },
+            // 10 New Shop Guns
+            { id: "m4a1", price: 980, desc: "تفنگ تهاجمی متعادل، محبوب در کانتر", stats: "دقت: خوب • قدرت: بالا" },
+            { id: "deagle", price: 780, desc: "تپانچه قدرتمند یک شلیک کشنده", stats: "دقت: متوسط • قدرت: بسیار بالا" },
+            { id: "p90", price: 1100, desc: "SMG با ظرفیت مهمات بالا", stats: "دقت: خوب • سرعت: عالی" },
+            { id: "shotgun", price: 920, desc: "شاتگان برای فاصله نزدیک وحشتناک", stats: "دقت: پایین • قدرت: بسیار بالا نزدیک" },
+            { id: "aug", price: 1050, desc: "تفنگ تهاجمی با دقت خوب", stats: "دقت: خیلی خوب • قدرت: خوب" },
+            { id: "mp5", price: 720, desc: "SMG کلاسیک و متعادل", stats: "دقت: خوب • سرعت: عالی" },
+            { id: "famas", price: 850, desc: "تفنگ تهاجمی سبک با نرخ آتش خوب", stats: "دقت: خوب • سرعت: خوب" },
+            { id: "m249", price: 2100, desc: "مسلسل سبک با ظرفیت بسیار بالا", stats: "دقت: متوسط • قدرت: خوب • مهمات زیاد" },
+            { id: "scar", price: 1350, desc: "تفنگ تهاجمی سنگین و قدرتمند", stats: "دقت: خوب • قدرت: بسیار بالا" },
+            { id: "g3sg1", price: 1550, desc: "اسنایپر نیمه خودکار", stats: "دقت: بالا • قدرت: بالا" }
         ];
         
         const SHOP_SKINS = [
@@ -668,6 +951,7 @@
         
         let currentSection = 'menu';
         let currentShopTab = 'guns';
+        let selectedGameMode = 'solo';
 
         // ==================== PEERJS MULTIPLAYER ====================
         let peer = null;
@@ -842,37 +1126,360 @@
                 showToast('کد اتاق کپی شد!');
             });
         }
+
+        function sendQuickChat(message) {
+            const chatDiv = document.createElement('div');
+            chatDiv.className = `fixed bottom-28 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-sm px-4 py-2 rounded-2xl border border-slate-600 z-[200]`;
+            chatDiv.innerHTML = `<span class="text-red-400">${gameState.playerName}:</span> ${message}`;
+            document.body.appendChild(chatDiv);
+            
+            setTimeout(() => {
+                chatDiv.style.transition = 'all 0.4s ease';
+                chatDiv.style.opacity = '0';
+                setTimeout(() => chatDiv.remove(), 300);
+            }, 2200);
+        }
+        
+        function joinRandomPublicRoom() {
+            const btn = event.currentTarget;
+            const originalText = btn ? btn.innerHTML : '';
+            
+            showToast('در حال جستجوی بازیکن آنلاین...');
+            
+            // Simulate finding a public room
+            setTimeout(() => {
+                // Create a room automatically (demo)
+                createPeerRoom();
+                
+                setTimeout(() => {
+                    showToast('بازیکن پیدا شد! در حال اتصال...');
+                    
+                    // Auto join simulation (in real would connect to someone)
+                    const status = document.getElementById('peer-status');
+                    if (status) {
+                        status.classList.remove('hidden');
+                        document.getElementById('peer-status-text').innerHTML = 
+                            `<span class="text-emerald-400">اتصال به لابی عمومی...</span>`;
+                    }
+                    
+                    // After "connecting", show start button
+                    setTimeout(() => {
+                        const startBtn = document.getElementById('start-multi-btn');
+                        if (startBtn) startBtn.classList.remove('hidden');
+                        showToast('آماده شروع بازی آنلاین!');
+                    }, 1800);
+                }, 1200);
+            }, 1600);
+        }
         
         // ==================== UTILITY FUNCTIONS ====================
         function saveGameState() {
-            localStorage.setItem('csWebGameState', JSON.stringify(gameState));
+            if (currentUser) {
+                // Save to user-specific storage
+                const stateToSave = { ...gameState, playerName: currentUser };
+                saveUserGameState(currentUser, stateToSave);
+            } else {
+                localStorage.setItem('csWebGameState', JSON.stringify(gameState));
+            }
         }
         
-        function loadGameState() {
-            const saved = localStorage.getItem('csWebGameState');
+        // ==================== AUTH & USER SYSTEM ====================
+        let currentUser = null;
+
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('csUsers') || '[]');
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('csUsers', JSON.stringify(users));
+        }
+
+        function getUserGameState(username) {
+            const saved = localStorage.getItem('csGameState_' + username);
             if (saved) {
-                const parsed = JSON.parse(saved);
-                gameState = { ...gameState, ...parsed };
-                // Ensure arrays exist
+                return JSON.parse(saved);
+            }
+            return null;
+        }
+
+        function saveUserGameState(username, state) {
+            localStorage.setItem('csGameState_' + username, JSON.stringify(state));
+        }
+
+        function showAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Default to login tab
+            switchAuthTab('login');
+        }
+
+        function hideAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('auth-login-form');
+            const registerForm = document.getElementById('auth-register-form');
+            const loginTab = document.getElementById('auth-tab-login');
+            const registerTab = document.getElementById('auth-tab-register');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                loginTab.classList.add('bg-red-600');
+                loginTab.classList.remove('hover:bg-slate-700');
+                registerTab.classList.remove('bg-red-600');
+                registerTab.classList.add('hover:bg-slate-700');
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                registerTab.classList.add('bg-red-600');
+                registerTab.classList.remove('hover:bg-slate-700');
+                loginTab.classList.remove('bg-red-600');
+                loginTab.classList.add('hover:bg-slate-700');
+            }
+        }
+
+        function registerUser() {
+            const username = document.getElementById('register-username').value.trim();
+            const pass = document.getElementById('register-password').value;
+            const pass2 = document.getElementById('register-password2').value;
+
+            if (!username || username.length < 3) {
+                alert('نام کاربری باید حداقل ۳ کاراکتر باشد');
+                return;
+            }
+            if (!pass || pass.length < 4) {
+                alert('رمز عبور باید حداقل ۴ کاراکتر باشد');
+                return;
+            }
+            if (pass !== pass2) {
+                alert('رمزهای عبور مطابقت ندارند');
+                return;
+            }
+
+            let users = getUsers();
+            if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+                alert('این نام کاربری قبلاً ثبت شده است');
+                return;
+            }
+
+            // Create new user
+            const newUser = { username: username, password: pass };
+            users.push(newUser);
+            saveUsers(users);
+
+            // Create initial gameState for this user
+            const initialState = {
+                coins: 2450,
+                playerName: username,
+                equippedGun: "pistol",
+                equippedSkin: "red",
+                ownedGuns: ["pistol"],
+                ownedSkins: ["red"],
+                leaderboard: [],
+                selectedMap: "dust2"
+            };
+            saveUserGameState(username, initialState);
+
+            currentUser = username;
+            localStorage.setItem('csCurrentUser', username);
+
+            // Load into global gameState
+            gameState = { ...gameState, ...initialState };
+            document.getElementById('player-name').textContent = gameState.playerName;
+            updateCoinsUI();
+
+            hideAuthModal();
+            showToast('ثبت‌نام موفق! خوش آمدید ' + username);
+        }
+
+        function loginUser() {
+            const username = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value;
+
+            if (!username || !pass) {
+                alert('لطفاً نام کاربری و رمز عبور را وارد کنید');
+                return;
+            }
+
+            let users = getUsers();
+            const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === pass);
+
+            if (!user) {
+                alert('نام کاربری یا رمز عبور اشتباه است');
+                return;
+            }
+
+            currentUser = user.username;
+            localStorage.setItem('csCurrentUser', currentUser);
+
+            // Load saved gameState for this user
+            const savedState = getUserGameState(currentUser);
+            if (savedState) {
+                gameState = { ...gameState, ...savedState };
+                // Ensure defaults
                 if (!gameState.ownedGuns) gameState.ownedGuns = ["pistol"];
                 if (!gameState.ownedSkins) gameState.ownedSkins = ["red"];
                 if (!gameState.leaderboard) gameState.leaderboard = [];
+            } else {
+                gameState.playerName = currentUser;
             }
-            
-            // Update UI
+
             document.getElementById('player-name').textContent = gameState.playerName;
             updateCoinsUI();
-            
-            // Simple skill system init
-            if (!gameState.skills) {
-                gameState.skills = { level: 1, xp: 0, accuracy: 1, speed: 1, health: 1 };
+
+            hideAuthModal();
+            showToast('خوش آمدید ' + currentUser + '!');
+        }
+
+        function changePlayerName() {
+            if (!currentUser) {
+                alert('ابتدا وارد حساب شوید');
+                return;
             }
+            const newName = prompt('نام کاربری جدید را وارد کنید:', gameState.playerName);
+            if (!newName || newName.trim() === '' || newName.trim() === gameState.playerName) return;
+
+            const trimmed = newName.trim();
+            if (trimmed.length < 3) {
+                alert('نام کاربری باید حداقل ۳ کاراکتر باشد');
+                return;
+            }
+
+            // Check if name taken by another user
+            let users = getUsers();
+            if (users.find(u => u.username.toLowerCase() === trimmed.toLowerCase() && u.username !== currentUser)) {
+                alert('این نام کاربری توسط کاربر دیگری گرفته شده است');
+                return;
+            }
+
+            // Update in users list
+            const userIndex = users.findIndex(u => u.username === currentUser);
+            if (userIndex !== -1) {
+                users[userIndex].username = trimmed;
+                saveUsers(users);
+            }
+
+            // Update current
+            const oldUser = currentUser;
+            currentUser = trimmed;
+            localStorage.setItem('csCurrentUser', currentUser);
+
+            // Move gameState to new key
+            const currentState = { ...gameState, playerName: trimmed };
+            saveUserGameState(currentUser, currentState);
+            localStorage.removeItem('csGameState_' + oldUser);
+
+            gameState.playerName = trimmed;
+            document.getElementById('player-name').textContent = trimmed;
+
+            showToast('نام کاربری با موفقیت تغییر کرد!');
+        }
+
+        function logout() {
+            if (confirm('آیا مطمئنی می‌خوای خارج شی؟')) {
+                localStorage.removeItem('csCurrentUser');
+                currentUser = null;
+                // Reset to guest or show auth again
+                showAuthModal();
+                // Optional: clear gameState display
+                document.getElementById('player-name').textContent = 'Guest';
+            }
+        }
+
+        // Enhanced loadGameState (now called after auth)
+        function loadGameState() {
+            // This is now mostly handled in login/register
+            // But keep for compatibility if needed
+            const saved = localStorage.getItem('csWebGameState');
+            if (saved && !currentUser) {
+                const parsed = JSON.parse(saved);
+                gameState = { ...gameState, ...parsed };
+            }
+            
+            if (!gameState.ownedGuns) gameState.ownedGuns = ["pistol"];
+            if (!gameState.ownedSkins) gameState.ownedSkins = ["red"];
+            if (!gameState.leaderboard) gameState.leaderboard = [];
+            
+            // Level system defaults
+            if (!gameState.level) gameState.level = 1;
+            if (!gameState.xp) gameState.xp = 0;
+            if (!gameState.xpToNext) gameState.xpToNext = 120;
+            if (!gameState.totalKills) gameState.totalKills = 0;
+            if (!gameState.gamesPlayed) gameState.gamesPlayed = 0;
+            
+            // Update UI
+            if (document.getElementById('player-name')) {
+                document.getElementById('player-name').textContent = gameState.playerName || 'Player';
+            }
+            updateCoinsUI();
+            updateLevelUI(); // new function
         }
         
         function updateCoinsUI() {
             document.getElementById('player-coins').textContent = gameState.coins.toLocaleString();
             const shopCoins = document.getElementById('shop-coins');
             if (shopCoins) shopCoins.textContent = gameState.coins.toLocaleString();
+        }
+        
+        function updateLevelUI() {
+            const badge = document.getElementById('player-level');
+            if (badge) badge.textContent = gameState.level || 1;
+        }
+        
+        function addXP(amount) {
+            if (!gameState.level) gameState.level = 1;
+            if (!gameState.xp) gameState.xp = 0;
+            if (!gameState.xpToNext) gameState.xpToNext = 120;
+            
+            gameState.xp += amount;
+            
+            let leveledUp = false;
+            while (gameState.xp >= gameState.xpToNext) {
+                gameState.xp -= gameState.xpToNext;
+                gameState.level++;
+                gameState.xpToNext = Math.floor(gameState.xpToNext * 1.35) + 30; // increasing difficulty
+                leveledUp = true;
+                
+                // Level up reward
+                const levelReward = 80 + (gameState.level * 15);
+                gameState.coins += levelReward;
+                showToast(`تبریک! به لول ${gameState.level} رسیدی! +${levelReward} سکه 🎉`);
+            }
+            
+            updateLevelUI();
+            updateCoinsUI();
+            saveGameState();
+            
+            if (leveledUp) {
+                // Confetti for level up
+                for (let i = 0; i < 25; i++) {
+                    setTimeout(() => {
+                        const conf = document.createElement('div');
+                        conf.className = 'fixed text-red-400 text-xl pointer-events-none z-[400]';
+                        conf.style.left = Math.random() * window.innerWidth + 'px';
+                        conf.style.top = '-30px';
+                        conf.innerHTML = '⭐';
+                        document.body.appendChild(conf);
+                        const fall = setInterval(() => {
+                            conf.style.top = (parseFloat(conf.style.top) + 18) + 'px';
+                            if (parseFloat(conf.style.top) > window.innerHeight) {
+                                clearInterval(fall);
+                                conf.remove();
+                            }
+                        }, 28);
+                    }, i * 6);
+                }
+            }
+        }
+        
+        function showLevelInfo() {
+            const progress = Math.floor((gameState.xp / gameState.xpToNext) * 100);
+            showToast(`لول ${gameState.level} • XP: ${gameState.xp}/${gameState.xpToNext} (${progress}%)`);
         }
         
         function claimDailyReward() {
@@ -935,7 +1542,9 @@
             } else if (section === 'play') {
                 renderPlaySection();
             } else if (section === 'maps') {
-                renderMaps();
+                if (typeof renderMaps === 'function') renderMaps();
+            } else if (section === 'missions') {
+                if (typeof renderMissions === 'function') renderMissions();
             }
         }
         
@@ -946,6 +1555,17 @@
         }
         
         // ==================== PLAY SECTION ====================
+        function selectGameMode(mode, element) {
+            selectedGameMode = mode;
+            // Deselect all
+            document.querySelectorAll('#mode-selector .mode-btn').forEach(el => {
+                el.classList.remove('active', 'border-red-500', 'bg-red-950/30');
+                el.classList.add('border-slate-600');
+            });
+            element.classList.add('active', 'border-red-500', 'bg-red-950/30');
+            element.classList.remove('border-slate-600');
+        }
+        
         function renderPlaySection() {
             // Offline map select
             const mapContainer = document.getElementById('offline-map-select');
@@ -1014,11 +1634,12 @@
                 skinContainer.appendChild(div);
             });
             
-            // Update online count (fake)
-            document.getElementById('online-count').textContent = (1247 + Math.floor(Math.random() * 30)).toLocaleString();
+            // Update online count (fake) - safe check
+            const onlineEl = document.getElementById('online-count');
+            if (onlineEl) onlineEl.textContent = (1247 + Math.floor(Math.random() * 30)).toLocaleString();
             
-            // Render fake lobby players
-            renderLobbyPlayers();
+            // Render fake lobby players (if container exists)
+            if (document.getElementById('lobby-players')) renderLobbyPlayers();
         }
         
         function renderLobbyPlayers() {
@@ -1377,7 +1998,121 @@
         // ==================== GAME LOGIC ====================
         let gameInstance = null;
         
-        function startOfflineGame() {
+        // ==================== MISSIONS SYSTEM ====================
+        function renderMissions() {
+            const container = document.getElementById('missions-list');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const totalKills = gameState.totalKills || 0;
+            const level = gameState.level || 1;
+            const gamesPlayed = gameState.gamesPlayed || 0;
+            const ownedGunsCount = (gameState.ownedGuns || []).length;
+            
+            const missions = [
+                {
+                    id: 'level5',
+                    title: 'به لول ۵ برس',
+                    desc: 'لولت رو به ۵ برسون',
+                    progress: Math.min(level, 5),
+                    goal: 5,
+                    reward: '۱۵۰ سکه',
+                    completed: level >= 5,
+                    icon: 'fa-level-up-alt'
+                },
+                {
+                    id: 'kills50',
+                    title: '۵۰ کیل جمع کن',
+                    desc: 'در کل بازی‌ها ۵۰ تا کیل بزن',
+                    progress: Math.min(totalKills, 50),
+                    goal: 50,
+                    reward: '۲۰۰ سکه',
+                    completed: totalKills >= 50,
+                    icon: 'fa-crosshairs'
+                },
+                {
+                    id: 'kills100',
+                    title: '۱۰۰ کیل = اسکین طلایی',
+                    desc: '۱۰۰ کیل بزن و اسکین خفن طلایی بگیر',
+                    progress: Math.min(totalKills, 100),
+                    goal: 100,
+                    reward: 'اسکین طلایی + ۳۵۰ سکه',
+                    completed: totalKills >= 100 || (gameState.ownedSkins || []).includes('gold'),
+                    icon: 'fa-trophy'
+                },
+                {
+                    id: 'games10',
+                    title: '۱۰ بازی انجام بده',
+                    desc: '۱۰ تا بازی کامل کن',
+                    progress: Math.min(gamesPlayed, 10),
+                    goal: 10,
+                    reward: '۳۰۰ سکه',
+                    completed: gamesPlayed >= 10,
+                    icon: 'fa-gamepad'
+                },
+                {
+                    id: 'guns3',
+                    title: '۳ تا گان بخر',
+                    desc: 'حداقل ۳ تا گان از فروشگاه بخر',
+                    progress: Math.min(ownedGunsCount, 3),
+                    goal: 3,
+                    reward: '۱۰۰ سکه',
+                    completed: ownedGunsCount >= 3,
+                    icon: 'fa-gun'
+                }
+            ];
+            
+            missions.forEach(mission => {
+                const card = document.createElement('div');
+                const isDone = mission.completed;
+                
+                card.className = `bg-slate-900 border ${isDone ? 'border-emerald-500' : 'border-slate-700'} rounded-3xl p-5`;
+                
+                const progressPct = Math.min(100, Math.floor((mission.progress / mission.goal) * 100));
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-x-3">
+                            <div class="w-11 h-11 ${isDone ? 'bg-emerald-600' : 'bg-slate-700'} rounded-2xl flex items-center justify-center">
+                                <i class="fa-solid ${mission.icon} text-xl ${isDone ? 'text-white' : 'text-emerald-400'}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-lg">${mission.title}</div>
+                                <div class="text-xs text-slate-400">${mission.desc}</div>
+                            </div>
+                        </div>
+                        ${isDone ? 
+                            `<div class="px-3 py-1 bg-emerald-600 text-xs font-bold rounded-2xl flex items-center gap-x-1">
+                                <i class="fa-solid fa-check"></i> 
+                                <span>کامل شد</span>
+                            </div>` : 
+                            `<div class="text-right text-xs font-mono text-emerald-400">${mission.progress}/${mission.goal}</div>`
+                        }
+                    </div>
+                    
+                    ${!isDone ? `
+                    <div class="mb-3">
+                        <div class="h-2.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 transition-all" style="width: ${progressPct}%"></div>
+                        </div>
+                    </div>` : ''}
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="text-emerald-400 font-medium">
+                            <i class="fa-solid fa-gift mr-1.5"></i> ${mission.reward}
+                        </div>
+                        ${isDone ? 
+                            `<span class="text-emerald-400 text-xs font-bold">جایزه دریافت شد</span>` : 
+                            `<span class="text-xs text-slate-500">${progressPct}%</span>`
+                        }
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+function startOfflineGame() {
             startGame(false);
         }
         
@@ -1404,6 +2139,27 @@
                 canvas.width = 900;
                 canvas.height = 600;
             }
+
+            // Show mobile controls
+            const joystickContainer = document.getElementById('joystick-container');
+            const shootBtn = document.getElementById('mobile-shoot-btn');
+            const reloadBtn = document.getElementById('mobile-reload-btn');
+            if (isMobile && joystickContainer && shootBtn) {
+                joystickContainer.classList.remove('hidden');
+                shootBtn.classList.remove('hidden');
+            }
+            if (isMobile && reloadBtn) {
+                reloadBtn.classList.remove('hidden');
+            }
+
+            // Show Quick Chat
+            const quickChat = document.getElementById('quick-chat');
+            if (quickChat) quickChat.classList.remove('hidden');
+            
+            // Joystick state
+            let joyMoveX = 0;
+            let joyMoveY = 0;
+            let joystickActive = false;
             
             // Game variables
             const player = {
@@ -1427,6 +2183,9 @@
             let kills = 0;
             let shotsFired = 0;
             let shotsHit = 0;
+            let killstreak = 0;
+            let powerUpActive = false;
+            let powerUpEndTime = 0;
             let ammo = GUNS[gameState.equippedGun].ammo;
             let maxAmmo = GUNS[gameState.equippedGun].maxAmmo;
             let isReloading = false;
@@ -1534,6 +2293,116 @@
             
             canvas.addEventListener('touchend', () => mouse.down = false);
             
+            // ==================== VIRTUAL JOYSTICK FOR MOBILE ====================
+            if (isMobile && joystickContainer) {
+                const knob = document.getElementById('joystick-knob');
+                const outer = joystickContainer.querySelector('.joystick-outer');
+                const outerRect = outer.getBoundingClientRect(); // initial
+                
+                let centerX = 60; // half of 120px
+                let centerY = 60;
+                const maxDistance = 42; // knob travel radius
+                
+                function updateKnob(x, y) {
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    const dist = Math.hypot(dx, dy);
+                    
+                    let finalX = x;
+                    let finalY = y;
+                    
+                    if (dist > maxDistance) {
+                        const angle = Math.atan2(dy, dx);
+                        finalX = centerX + Math.cos(angle) * maxDistance;
+                        finalY = centerY + Math.sin(angle) * maxDistance;
+                    }
+                    
+                    knob.style.left = finalX + 'px';
+                    knob.style.top = finalY + 'px';
+                    
+                    // Update movement values (normalized -1 to 1)
+                    if (dist > 8) {
+                        joyMoveX = (finalX - centerX) / maxDistance;
+                        joyMoveY = (finalY - centerY) / maxDistance;
+                        joystickActive = true;
+                    } else {
+                        joyMoveX = 0;
+                        joyMoveY = 0;
+                        joystickActive = false;
+                    }
+                }
+                
+                function resetKnob() {
+                    knob.style.left = '50%';
+                    knob.style.top = '50%';
+                    joyMoveX = 0;
+                    joyMoveY = 0;
+                    joystickActive = false;
+                }
+                
+                // Touch events on joystick container
+                joystickContainer.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    const rect = outer.getBoundingClientRect();
+                    centerX = rect.width / 2;
+                    centerY = rect.height / 2;
+                    const touchX = e.touches[0].clientX - rect.left;
+                    const touchY = e.touches[0].clientY - rect.top;
+                    updateKnob(touchX, touchY);
+                }, { passive: false });
+                
+                joystickContainer.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                    const rect = outer.getBoundingClientRect();
+                    const touchX = e.touches[0].clientX - rect.left;
+                    const touchY = e.touches[0].clientY - rect.top;
+                    updateKnob(touchX, touchY);
+                }, { passive: false });
+                
+                joystickContainer.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    resetKnob();
+                });
+                
+                joystickContainer.addEventListener('touchcancel', function(e) {
+                    resetKnob();
+                });
+            }
+            
+            // Mobile Shoot Button handlers
+            if (isMobile && shootBtn) {
+                shootBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    mouse.down = true;
+                }, { passive: false });
+                
+                shootBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    mouse.down = false;
+                });
+                
+                // Also allow mouse for testing
+                shootBtn.addEventListener('mousedown', () => mouse.down = true);
+                shootBtn.addEventListener('mouseup', () => mouse.down = false);
+                shootBtn.addEventListener('mouseleave', () => mouse.down = false);
+            }
+            
+            // Reload button (mobile)
+            if (isMobile && reloadBtn) {
+                reloadBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    if (!isReloading && ammo < maxAmmo) {
+                        startReload();
+                    }
+                }, { passive: false });
+                
+                reloadBtn.addEventListener('click', function() {
+                    if (!isReloading && ammo < maxAmmo) {
+                        startReload();
+                    }
+                });
+            }
+            
             function startReload() {
                 if (isReloading) return;
                 isReloading = true;
@@ -1565,6 +2434,13 @@
                 // Update timer
                 gameTimeLeft -= delta / 60;
                 if (gameTimeLeft < 0) gameTimeLeft = 0;
+
+                // Killstreak power-up timer
+                if (powerUpActive && Date.now() > powerUpEndTime) {
+                    powerUpActive = false;
+                    player.speed = isMobile ? 3.2 : 3.8; // reset speed
+                    showToast('Speed Boost تمام شد');
+                }
                 
                 const min = Math.floor(gameTimeLeft / 60);
                 const sec = Math.floor(gameTimeLeft % 60);
@@ -1575,12 +2451,18 @@
                     return;
                 }
                 
-                // Player movement
+                // Player movement (Keyboard + Virtual Joystick on mobile)
                 let moveX = 0, moveY = 0;
                 if (keys['w'] || keys['arrowup']) moveY -= 1;
                 if (keys['s'] || keys['arrowdown']) moveY += 1;
                 if (keys['a'] || keys['arrowleft']) moveX -= 1;
                 if (keys['d'] || keys['arrowright']) moveX += 1;
+                
+                // Joystick input (takes priority or adds to keyboard)
+                if (joystickActive && (joyMoveX !== 0 || joyMoveY !== 0)) {
+                    moveX += joyMoveX;
+                    moveY += joyMoveY;
+                }
                 
                 if (moveX !== 0 || moveY !== 0) {
                     const len = Math.hypot(moveX, moveY);
@@ -1804,7 +2686,16 @@
                             if (enemy.health <= 0) {
                                 // Kill
                                 kills++;
+                                killstreak++;
                                 score += 120 + Math.floor(Math.random() * 30);
+                                
+                                // Killstreak reward
+                                if (killstreak >= 3 && !powerUpActive) {
+                                    powerUpActive = true;
+                                    powerUpEndTime = Date.now() + 8000; // 8 seconds
+                                    player.speed = (isMobile ? 4.5 : 5.2); // Speed boost
+                                    showToast('Killstreak! Speed Boost فعال شد! ⚡');
+                                }
                                 
                                 // Death particles
                                 for (let p = 0; p < 18; p++) {
@@ -1880,13 +2771,13 @@
                         dx = player.x + (Math.random() > 0.5 ? 180 : -180);
                         dy = player.y + (Math.random() > 0.5 ? 180 : -180);
                     }
-                    const dropTypes = ['ammo', 'weapon'];
+                    const dropTypes = ['ammo', 'weapon', 'health'];
                     const type = dropTypes[Math.floor(Math.random() * dropTypes.length)];
                     drops.push({
                         x: dx, y: dy,
                         type: type,
                         gunId: type === 'weapon' ? Object.keys(GUNS)[Math.floor(Math.random()*Object.keys(GUNS).length)] : null,
-                        amount: type === 'ammo' ? 15 : 0,
+                        amount: type === 'ammo' ? 15 : (type === 'health' ? 35 : 0),
                         life: 22000
                     });
                 }
@@ -1903,8 +2794,11 @@
                             showToast('مهمات پیدا کردی! +۱۵ تیر');
                         } else if (d.type === 'weapon' && d.gunId && GUNS[d.gunId]) {
                             gameState.equippedGun = d.gunId;
-                            // refresh currentGun in scope is hard, so just notify
                             showToast(`گان جدید پیدا کردی: ${GUNS[d.gunId].name}`);
+                        } else if (d.type === 'health') {
+                            player.health = Math.min(100, player.health + d.amount);
+                            showToast('کیت پزشکی پیدا کردی! +۳۵ جان');
+                            updateHUD();
                         }
                         drops.splice(i, 1);
                         updateHUD();
@@ -2013,6 +2907,12 @@
                         ctx.fillStyle = '#854d0e';
                         ctx.font = 'bold 10px sans-serif';
                         ctx.fillText('AMMO', -14, 4);
+                    } else if (d.type === 'health') {
+                        ctx.fillStyle = '#22c55e';
+                        ctx.fillRect(-12, -12, 24, 24);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 14px sans-serif';
+                        ctx.fillText('+', -5, 5);
                     } else {
                         ctx.fillStyle = '#ef4444';
                         ctx.fillRect(-14, -10, 28, 20);
@@ -2198,11 +3098,28 @@
                 const earnedCoins = Math.floor(finalScore / 7) + 35;
                 gameState.coins += earnedCoins;
                 
+                // Level & XP progression
+                gameState.totalKills = (gameState.totalKills || 0) + kills;
+                gameState.gamesPlayed = (gameState.gamesPlayed || 0) + 1;
+                
+                const xpGained = Math.floor(kills * 8) + Math.floor(finalScore / 25) + 15;
+                addXP(xpGained);
+                
+                // Mission: 100 Kills → Unlock Gold Skin
+                if (gameState.totalKills >= 100 && !gameState.ownedSkins.includes('gold')) {
+                    gameState.ownedSkins.push('gold');
+                    gameState.equippedSkin = 'gold';
+                    showToast('ماموریت کامل شد! اسکین طلایی لاکچری باز شد! 🏆');
+                    // Bonus coins
+                    gameState.coins += 350;
+                }
+                
                 // Add to leaderboard
                 addScoreToLeaderboard(finalScore, kills, accuracy);
                 
                 saveGameState();
                 updateCoinsUI();
+                updateLevelUI();
                 
                 // Show game over modal
                 showGameOverModal(timeUp, finalScore, kills, accuracy, earnedCoins);
@@ -2211,6 +3128,17 @@
                 gameInstance = null;
                 window.currentGameInstance = null;
                 isMultiplayer = false;
+                
+                // Hide mobile joystick, shoot & reload buttons
+                const j = document.getElementById('joystick-container');
+                const s = document.getElementById('mobile-shoot-btn');
+                const r = document.getElementById('mobile-reload-btn');
+                if (j) j.classList.add('hidden');
+                if (s) s.classList.add('hidden');
+                if (r) r.classList.add('hidden');
+                
+                const qc = document.getElementById('quick-chat');
+                if (qc) qc.classList.add('hidden');
             };
         }
         
@@ -2287,7 +3215,26 @@
         
         // ==================== INITIALIZATION ====================
         function initGame() {
-            loadGameState();
+            // Check if user is logged in
+            const savedUser = localStorage.getItem('csCurrentUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                const savedState = getUserGameState(currentUser);
+                if (savedState) {
+                    gameState = { ...gameState, ...savedState };
+                } else {
+                    gameState.playerName = currentUser;
+                }
+                document.getElementById('player-name').textContent = gameState.playerName;
+                updateCoinsUI();
+            } else {
+                // No logged in user -> show auth modal
+                setTimeout(() => {
+                    showAuthModal();
+                }, 600);
+            }
+            
+            loadGameState(); // still run for any legacy data
             
             // Make sure default gun & skin are owned
             if (!gameState.ownedGuns.includes('pistol')) gameState.ownedGuns.push('pistol');
