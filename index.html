@@ -479,9 +479,9 @@
                                 <div class="font-bold text-sm">Team DM</div>
                                 <div class="text-[10px] text-slate-400">تیمی vs ربات‌ها</div>
                             </div>
-                            <div onclick="selectGameMode('bomb', this)" class="mode-btn border-2 border-slate-600 hover:border-slate-400 rounded-2xl p-3 text-center cursor-pointer">
-                                <div class="font-bold text-sm">Bomb</div>
-                                <div class="text-[10px] text-slate-400">بمب‌گذاری</div>
+                            <div onclick="selectGameMode('pvp', this)" class="mode-btn border-2 border-slate-600 hover:border-slate-400 rounded-2xl p-3 text-center cursor-pointer">
+                                <div class="font-bold text-sm">Player vs Player</div>
+                                <div class="text-[10px] text-slate-400">بازیکن در مقابل بازیکن (آنلاین - بدون ربات)</div>
                             </div>
                         </div>
                     </div>
@@ -977,7 +977,9 @@
             y: 300,
             health: 100,
             color: '#3b82f6',
-            name: 'Opponent'
+            name: 'Opponent',
+            size: 18,
+            kills: 0
         };
         let remoteBots = [];
         let lastPositionSync = 0;
@@ -1110,7 +1112,34 @@
                 // Remote hit us
                 player.health = Math.max(0, player.health - (data.damage || 20));
                 if (player.health <= 0) {
-                    endGame(false);
+                    // Tell the shooter they got the kill
+                    if (conn && conn.open) {
+                        conn.send({ type: 'got-kill' });
+                    }
+                    if (selectedGameMode !== 'pvp') {
+                        endGame(false);
+                    } else {
+                        showToast('کشته شدی! منتظر پایان تایمر بمان یا از بازی خارج شو');
+                    }
+                }
+            }
+            
+            if (data.type === 'got-kill') {
+                // We killed the remote player!
+                kills++;
+                score += 250;
+                showToast('حریف را کشتی! +۲۵۰ امتیاز');
+                // Death particles for remote
+                for (let p = 0; p < 15; p++) {
+                    particles.push({
+                        x: remotePlayer.x,
+                        y: remotePlayer.y,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: (Math.random() - 0.5) * 5,
+                        life: 20,
+                        size: 3,
+                        color: '#ef4444'
+                    });
                 }
             }
             
@@ -2244,6 +2273,11 @@
         }
 
 function startOfflineGame() {
+            if (selectedGameMode === 'pvp') {
+                alert('گیم مود Player vs Player فقط در لابی آنلاین کار می‌کنه! لطفاً از بخش لابی آنلاین یک اتاق بساز یا جوین شو و بعد شروع کن.');
+                showSection('play');
+                return;
+            }
             startGame(false);
         }
         
@@ -2367,7 +2401,7 @@ function startOfflineGame() {
                 });
             }
             
-            if (!isMultiplayer || isHost) {
+            if (selectedGameMode !== 'pvp' && (!isMultiplayer || isHost)) {
                 for (let i = 0; i < 6; i++) spawnEnemy();
             }
             
@@ -2862,10 +2896,44 @@ function startOfflineGame() {
                                 enemies.splice(e, 1);
                                 
                                 // Chance to spawn new enemy
-                                if (Math.random() < 0.75 && enemies.length < 9) {
+                                if (selectedGameMode !== 'pvp' && Math.random() < 0.75 && enemies.length < 9) {
                                     setTimeout(spawnEnemy, 420);
                                 }
                             }
+                            break;
+                        }
+                    }
+                }
+                
+                // PVP: Local bullets hit remote player
+                if (isMultiplayer && selectedGameMode === 'pvp') {
+                    for (let b = bullets.length - 1; b >= 0; b--) {
+                        const bullet = bullets[b];
+                        if (bullet.isEnemy) continue;
+                        
+                        const dx = bullet.x - remotePlayer.x;
+                        const dy = bullet.y - remotePlayer.y;
+                        if (Math.hypot(dx, dy) < (remotePlayer.size || 18) + bullet.size + 2) {
+                            const dmg = bullet.damage || 22;
+                            if (conn && conn.open) {
+                                conn.send({
+                                    type: 'hit',
+                                    damage: dmg
+                                });
+                            }
+                            // Local hit particles on remote
+                            for (let p = 0; p < 6; p++) {
+                                particles.push({
+                                    x: bullet.x,
+                                    y: bullet.y,
+                                    vx: (Math.random() - 0.5) * 3.5,
+                                    vy: (Math.random() - 0.5) * 3.5,
+                                    life: 12,
+                                    size: 2.5,
+                                    color: '#ef4444'
+                                });
+                            }
+                            bullets.splice(b, 1);
                             break;
                         }
                     }
@@ -2941,7 +3009,7 @@ function startOfflineGame() {
                 updateHUD();
                 
                 // Spawn more enemies over time
-                if (now - lastEnemySpawn > 3800 && enemies.length < 8) {
+                if (selectedGameMode !== 'pvp' && now - lastEnemySpawn > 3800 && enemies.length < 8) {
                     lastEnemySpawn = now;
                     spawnEnemy();
                 }
@@ -3505,6 +3573,18 @@ function startOfflineGame() {
                 iconContainer.style.background = 'rgba(239, 68, 68, 0.1)';
                 title.textContent = 'بازی تمام شد';
                 subtitle.textContent = 'دفعه بعد بهتر می‌شی!';
+            }
+            
+            // Special PVP end screen
+            if (selectedGameMode === 'pvp') {
+                iconContainer.innerHTML = `<i class="fa-solid fa-users text-6xl text-purple-400"></i>`;
+                iconContainer.style.background = 'rgba(168, 85, 247, 0.15)';
+                title.textContent = 'نتایج Player vs Player';
+                const myK = kills || 0;
+                const oppK = (remotePlayer && remotePlayer.kills) || 0;
+                const bestPlayer = myK > oppK ? (gameState.playerName || 'شما') : (oppK > myK ? (remotePlayer.name || 'حریف') : 'مساوی');
+                const surv = (player && player.health > 0 ? 1 : 0) + (remotePlayer && remotePlayer.health > 0 ? 1 : 0);
+                subtitle.innerHTML = `بهترین بازیکن: <b style="color:#c026d3">${bestPlayer}</b><br>شما: ${myK} کیل | حریف: ${oppK} کیل<br>تعداد بازماندگان: ${surv} نفر`;
             }
             
             modal.classList.remove('hidden');
