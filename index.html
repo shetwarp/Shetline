@@ -2905,15 +2905,15 @@ function startOfflineGame() {
                     }
                 }
                 
-                // PVP / Multiplayer: Local bullets hit remote player (always enabled in online multiplayer so players can damage each other)
-                if (isMultiplayer) {
+                // PVP: Local bullets hit remote player
+                if (isMultiplayer && selectedGameMode === 'pvp') {
                     for (let b = bullets.length - 1; b >= 0; b--) {
                         const bullet = bullets[b];
                         if (bullet.isEnemy) continue;
                         
                         const dx = bullet.x - remotePlayer.x;
                         const dy = bullet.y - remotePlayer.y;
-                        if (Math.hypot(dx, dy) < (remotePlayer.size || 18) + bullet.size + 2) {
+                        if (Math.hypot(dx, dy) < (remotePlayer.size || 18) + bullet.size + 10) {  // more forgiving hit radius for better feel in multiplayer with latency
                             const dmg = bullet.damage || 22;
                             if (conn && conn.open) {
                                 conn.send({
