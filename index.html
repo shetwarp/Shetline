@@ -2905,8 +2905,8 @@ function startOfflineGame() {
                     }
                 }
                 
-                // PVP: Local bullets hit remote player
-                if (isMultiplayer && selectedGameMode === 'pvp') {
+                // PVP / Multiplayer: Local bullets hit remote player (always enabled in online multiplayer so players can damage each other)
+                if (isMultiplayer) {
                     for (let b = bullets.length - 1; b >= 0; b--) {
                         const bullet = bullets[b];
                         if (bullet.isEnemy) continue;
