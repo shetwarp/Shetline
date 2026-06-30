@@ -979,7 +979,9 @@
             color: '#3b82f6',
             name: 'Opponent'
         };
+        let remoteBots = [];
         let lastPositionSync = 0;
+        let lastBotSync = 0;
         let multiplayerRoomId = '';
 
         function createPeerRoom() {
@@ -1050,6 +1052,19 @@
                     name: gameState.playerName,
                     skin: gameState.equippedSkin
                 });
+                
+                // NEW: If this is the host, send current map & settings to the guest immediately
+                if (isHost) {
+                    setTimeout(() => {
+                        if (conn && conn.open) {
+                            conn.send({
+                                type: 'game-settings',
+                                map: gameState.selectedMap,
+                                mode: selectedGameMode || 'deathmatch'
+                            });
+                        }
+                    }, 300);
+                }
             });
             
             conn.on('data', function(data) {
@@ -1096,6 +1111,37 @@
                 player.health = Math.max(0, player.health - (data.damage || 20));
                 if (player.health <= 0) {
                     endGame(false);
+                }
+            }
+            
+            // NEW: Map and settings sync from host
+            if (data.type === 'game-settings') {
+                if (data.map && MAPS[data.map]) {
+                    gameState.selectedMap = data.map;
+                }
+                showToast('نقشه از هاست دریافت شد: ' + (MAPS[gameState.selectedMap]?.name || ''));
+            }
+            
+            // NEW: Bots update from host (authoritative)
+            if (data.type === 'bots-update') {
+                remoteBots = data.bots || [];
+            }
+            
+            // NEW: Guest hit a bot -> tell host (only host processes)
+            if (data.type === 'bot-hit' && isHost) {
+                const idx = data.index;
+                if (enemies[idx]) {
+                    enemies[idx].health -= (data.damage || 20);
+                    if (enemies[idx].health <= 0) {
+                        for (let p = 0; p < 12; p++) {
+                            particles.push({
+                                x: enemies[idx].x, y: enemies[idx].y,
+                                vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4,
+                                life: 18, size: 3, color: '#64748b'
+                            });
+                        }
+                        enemies.splice(idx, 1);
+                    }
                 }
             }
         }
@@ -2321,7 +2367,9 @@ function startOfflineGame() {
                 });
             }
             
-            for (let i = 0; i < 6; i++) spawnEnemy();
+            if (!isMultiplayer || isHost) {
+                for (let i = 0; i < 6; i++) spawnEnemy();
+            }
             
             // Input handlers
             function handleKeyDown(e) {
@@ -2563,6 +2611,18 @@ function startOfflineGame() {
                 if (isMultiplayer && conn && conn.open && (now - lastPositionSync > 80)) {
                     lastPositionSync = now;
                     sendPositionUpdate(player.x, player.y, player.health);
+                }
+                
+                // NEW: Host sends authoritative bots update every ~180ms to guest
+                if (isHost && isMultiplayer && conn && conn.open && (now - lastBotSync > 180)) {
+                    lastBotSync = now;
+                    const minimalBots = enemies.map(e => ({
+                        x: e.x,
+                        y: e.y,
+                        health: e.health,
+                        size: e.size || 16
+                    }));
+                    conn.send({ type: 'bots-update', bots: minimalBots });
                 }
                 
                 // Reload logic
@@ -2811,6 +2871,38 @@ function startOfflineGame() {
                     }
                 }
                 
+                // NEW: Guest can shoot remoteBots too (sends hit to host for authoritative damage)
+                if (isMultiplayer && !isHost && remoteBots.length > 0) {
+                    for (let b = bullets.length - 1; b >= 0; b--) {
+                        const bullet = bullets[b];
+                        if (bullet.isEnemy) continue;
+                        
+                        for (let e = remoteBots.length - 1; e >= 0; e--) {
+                            const bot = remoteBots[e];
+                            if (Math.hypot(bullet.x - bot.x, bullet.y - bot.y) < ((bot.size || 16) + bullet.size)) {
+                                if (conn && conn.open) {
+                                    conn.send({
+                                        type: 'bot-hit',
+                                        index: e,
+                                        damage: bullet.damage || 20
+                                    });
+                                }
+                                shotsHit++;
+                                for (let p = 0; p < 5; p++) {
+                                    particles.push({
+                                        x: bullet.x, y: bullet.y,
+                                        vx: (Math.random() - 0.5) * 3.5,
+                                        vy: (Math.random() - 0.5) * 3.5,
+                                        life: 12, size: 2.5, color: '#ef4444'
+                                    });
+                                }
+                                bullets.splice(b, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
                 // Enemy bullets hit player
                 for (let b = bullets.length - 1; b >= 0; b--) {
                     const bullet = bullets[b];
@@ -2984,6 +3076,37 @@ function startOfflineGame() {
                     ctx.fillStyle = healthPct > 0.5 ? '#4ade80' : '#f87171';
                     ctx.fillRect(e.x - 13, e.y - e.size - 11, 26 * healthPct, 5);
                 });
+                
+                // NEW: Draw remoteBots for guest in multiplayer (shared bots from host)
+                if (isMultiplayer && !isHost && remoteBots.length > 0) {
+                    remoteBots.forEach(bot => {
+                        const bSize = bot.size || 16;
+                        // Shadow
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+                        ctx.beginPath();
+                        ctx.ellipse(bot.x + 3, bot.y + 12, bSize * 0.9, bSize * 0.4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Body
+                        ctx.fillStyle = '#64748b';
+                        ctx.beginPath();
+                        ctx.arc(bot.x, bot.y, bSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Head
+                        ctx.fillStyle = '#475569';
+                        ctx.beginPath();
+                        ctx.arc(bot.x, bot.y - 3, bSize * 0.65, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Health bar
+                        const hPct = Math.max(0, (bot.health || 60) / 80);
+                        ctx.fillStyle = '#334155';
+                        ctx.fillRect(bot.x - 10, bot.y - bSize - 9, 20, 4);
+                        ctx.fillStyle = hPct > 0.5 ? '#4ade80' : '#f87171';
+                        ctx.fillRect(bot.x - 10, bot.y - bSize - 9, 20 * hPct, 4);
+                    });
+                }
                 
                 // Draw drops (weapon/ammo crates)
                 drops.forEach(d => {
@@ -3239,11 +3362,19 @@ function startOfflineGame() {
                     ctx.ellipse(remotePlayer.x, remotePlayer.y - 4, 8, 5, 0, 0, Math.PI * 2);
                     ctx.stroke();
                     
-                    // Name tag
+                    // Name tag + Health bar for remote player (exact name + live health)
                     ctx.fillStyle = '#fff';
                     ctx.font = 'bold 11px Vazirmatn, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText(remotePlayer.name || 'Opponent', remotePlayer.x, remotePlayer.y - 28);
+                    
+                    // Small health bar above the name
+                    const remoteHealthPct = Math.max(0, (remotePlayer.health || 100) / 100);
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(remotePlayer.x - 20, remotePlayer.y - 38, 40, 5);
+                    ctx.fillStyle = remoteHealthPct > 0.5 ? '#22c55e' : (remoteHealthPct > 0.25 ? '#eab308' : '#ef4444');
+                    ctx.fillRect(remotePlayer.x - 20, remotePlayer.y - 38, 40 * remoteHealthPct, 5);
+                    
                     ctx.textAlign = 'left';
                 }
                 
