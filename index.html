@@ -967,24 +967,26 @@
         let currentShopTab = 'guns';
         let selectedGameMode = 'solo';
 
-        // ==================== PEERJS MULTIPLAYER ====================
+        // ==================== PEERJS MULTIPLAYER (Multi >2 players support) ====================
         let peer = null;
         let conn = null;
+        let connections = [];
         let isHost = false;
         let isMultiplayer = false;
-        let remotePlayer = {
-            x: 300,
-            y: 300,
-            health: 100,
-            color: '#3b82f6',
-            name: 'Opponent',
-            size: 18,
-            kills: 0
-        };
+        let remotePlayers = {};
         let remoteBots = [];
         let lastPositionSync = 0;
         let lastBotSync = 0;
         let multiplayerRoomId = '';
+
+        function broadcast(data, excludeConn = null) {
+            if (!isHost || connections.length === 0) return;
+            connections.forEach(c => {
+                if (c.open && c !== excludeConn) {
+                    try { c.send(data); } catch(e) {}
+                }
+            });
+        }
 
         function createPeerRoom() {
             if (peer) peer.destroy();
@@ -994,18 +996,20 @@
             peer.on('open', function(id) {
                 multiplayerRoomId = id;
                 isHost = true;
+                connections = [];
+                remotePlayers = {};
                 
                 document.getElementById('room-id-display').classList.remove('hidden');
                 document.getElementById('room-id-text').textContent = id;
                 document.getElementById('peer-status').classList.remove('hidden');
                 document.getElementById('peer-status-text').innerHTML = 
-                    `<span class="text-emerald-400">اتاق ساخته شد! منتظر بازیکن...</span>`;
+                    `<span class="text-emerald-400">اتاق ساخته شد! منتظر بازیکن‌ها...</span>`;
                 document.getElementById('start-multi-btn').classList.remove('hidden');
                 
-                // Wait for connection
+                // Accept MULTIPLE connections
                 peer.on('connection', function(connection) {
-                    conn = connection;
-                    setupConnection();
+                    connections.push(connection);
+                    setupConnection(connection);
                 });
             });
             
@@ -1042,24 +1046,24 @@
             });
         }
         
-        function setupConnection() {
-            conn.on('open', function() {
+        function setupConnection(connection) {
+            const peerId = connection.peer;
+            
+            connection.on('open', function() {
                 document.getElementById('peer-status-text').innerHTML = 
-                    `<span class="text-emerald-400">✅ متصل شدید! آماده شروع بازی</span>`;
+                    `<span class="text-emerald-400">✅ ${connections.length} بازیکن متصل! آماده شروع</span>`;
                 document.getElementById('start-multi-btn').classList.remove('hidden');
                 
-                // Send initial info
-                conn.send({
+                connection.send({
                     type: 'player-info',
                     name: gameState.playerName,
                     skin: gameState.equippedSkin
                 });
                 
-                // NEW: If this is the host, send current map & settings to the guest immediately
                 if (isHost) {
                     setTimeout(() => {
-                        if (conn && conn.open) {
-                            conn.send({
+                        if (connection && connection.open) {
+                            connection.send({
                                 type: 'game-settings',
                                 map: gameState.selectedMap,
                                 mode: selectedGameMode || 'deathmatch'
@@ -1069,106 +1073,93 @@
                 }
             });
             
-            conn.on('data', function(data) {
-                handlePeerData(data);
+            connection.on('data', function(data) {
+                handlePeerData(data, connection);
             });
             
-            conn.on('close', function() {
+            connection.on('close', function() {
+                connections = connections.filter(c => c !== connection);
+                if (remotePlayers[peerId]) delete remotePlayers[peerId];
                 document.getElementById('peer-status-text').innerHTML = 
-                    `<span class="text-red-400">اتصال قطع شد</span>`;
-                isMultiplayer = false;
+                    `<span class="text-red-400">یک بازیکن قطع شد (${connections.length} باقی‌مانده)</span>`;
             });
         }
         
-        function handlePeerData(data) {
+        function handlePeerData(data, connection) {
+            const fromPeerId = data.peerId || (connection && connection.peer) || 'unknown';
+            
             if (data.type === 'player-info') {
-                remotePlayer.name = data.name || 'Opponent';
+                if (!remotePlayers[fromPeerId]) {
+                    remotePlayers[fromPeerId] = {
+                        x: 300, y: 300, health: 100,
+                        color: '#3b82f6', name: data.name || 'Player',
+                        size: 18, kills: 0
+                    };
+                }
+                remotePlayers[fromPeerId].name = data.name || remotePlayers[fromPeerId].name;
                 if (data.skin && SKINS[data.skin]) {
-                    remotePlayer.color = SKINS[data.skin].color;
+                    remotePlayers[fromPeerId].color = SKINS[data.skin].color;
+                }
+                if (isHost && !data.peerId) {
+                    broadcast({ type: 'player-info', peerId: fromPeerId, name: data.name, skin: data.skin }, connection);
                 }
             }
             
             if (data.type === 'position') {
-                remotePlayer.x = data.x;
-                remotePlayer.y = data.y;
-                if (data.health !== undefined) remotePlayer.health = data.health;
+                if (!remotePlayers[fromPeerId]) {
+                    remotePlayers[fromPeerId] = { x: data.x||300, y: data.y||300, health: data.health||100, color: '#3b82f6', name: 'Player', size: 18, kills: 0 };
+                }
+                remotePlayers[fromPeerId].x = data.x;
+                remotePlayers[fromPeerId].y = data.y;
+                if (data.health !== undefined) remotePlayers[fromPeerId].health = data.health;
+                
+                if (isHost && !data.peerId) {
+                    broadcast({ type: 'position', peerId: fromPeerId, x: data.x, y: data.y, health: data.health }, connection);
+                }
             }
             
             if (data.type === 'shoot') {
-                // Create bullet from remote player position
                 bullets.push({
-                    x: data.x,
-                    y: data.y,
-                    vx: data.vx,
-                    vy: data.vy,
-                    damage: data.damage || 25,
-                    size: 4,
-                    life: 50,
-                    isEnemy: true
+                    x: data.x, y: data.y, vx: data.vx, vy: data.vy,
+                    damage: data.damage || 25, size: 4, life: 50, isEnemy: true
                 });
+                if (isHost) broadcast(data, connection);
             }
             
             if (data.type === 'hit') {
-                // Remote hit us
                 player.health = Math.max(0, player.health - (data.damage || 20));
                 if (player.health <= 0) {
-                    // Tell the shooter they got the kill
-                    if (conn && conn.open) {
-                        conn.send({ type: 'got-kill' });
-                    }
-                    if (selectedGameMode !== 'pvp') {
-                        endGame(false);
-                    } else {
-                        showToast('کشته شدی! منتظر پایان تایمر بمان یا از بازی خارج شو');
-                    }
+                    if (conn && conn.open) conn.send({ type: 'got-kill' });
+                    if (selectedGameMode !== 'pvp') endGame(false);
+                    else showToast('کشته شدی!');
                 }
+            }
+            
+            if (data.type === 'player-hit' && isHost) {
+                const targetConn = connections.find(c => c.peer === data.targetPeerId);
+                if (targetConn && targetConn.open) targetConn.send({ type: 'hit', damage: data.damage || 20 });
             }
             
             if (data.type === 'got-kill') {
-                // We killed the remote player!
                 kills++;
                 score += 250;
                 showToast('حریف را کشتی! +۲۵۰ امتیاز');
-                // Death particles for remote
-                for (let p = 0; p < 15; p++) {
-                    particles.push({
-                        x: remotePlayer.x,
-                        y: remotePlayer.y,
-                        vx: (Math.random() - 0.5) * 5,
-                        vy: (Math.random() - 0.5) * 5,
-                        life: 20,
-                        size: 3,
-                        color: '#ef4444'
-                    });
-                }
             }
             
-            // NEW: Map and settings sync from host
             if (data.type === 'game-settings') {
-                if (data.map && MAPS[data.map]) {
-                    gameState.selectedMap = data.map;
-                }
-                showToast('نقشه از هاست دریافت شد: ' + (MAPS[gameState.selectedMap]?.name || ''));
+                if (data.map && MAPS[data.map]) gameState.selectedMap = data.map;
+                showToast('نقشه از هاست دریافت شد');
             }
             
-            // NEW: Bots update from host (authoritative)
             if (data.type === 'bots-update') {
                 remoteBots = data.bots || [];
             }
             
-            // NEW: Guest hit a bot -> tell host (only host processes)
             if (data.type === 'bot-hit' && isHost) {
                 const idx = data.index;
                 if (enemies[idx]) {
                     enemies[idx].health -= (data.damage || 20);
                     if (enemies[idx].health <= 0) {
-                        for (let p = 0; p < 12; p++) {
-                            particles.push({
-                                x: enemies[idx].x, y: enemies[idx].y,
-                                vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4,
-                                life: 18, size: 3, color: '#64748b'
-                            });
-                        }
                         enemies.splice(idx, 1);
                     }
                 }
@@ -1176,36 +1167,33 @@
         }
         
         function startMultiplayerGame() {
-            if (!conn || !conn.open) {
-                alert('ابتدا به یک اتاق وصل شوید');
+            if (!conn && connections.length === 0) {
+                alert('ابتدا اتاق بساز یا به اتاقی جوین شو');
                 return;
             }
-            
             isMultiplayer = true;
-            startGame(true); // reuse the game function with multiplayer flag
+            remotePlayers = {};
+            startGame(true);
         }
         
         function sendPositionUpdate(x, y, health) {
-            if (conn && conn.open) {
-                conn.send({
+            if (isHost) {
+                broadcast({
                     type: 'position',
-                    x: x,
-                    y: y,
-                    health: health
+                    peerId: multiplayerRoomId,
+                    x: x, y: y, health: health
                 });
+            } else if (conn && conn.open) {
+                conn.send({ type: 'position', x: x, y: y, health: health });
             }
         }
         
         function sendShootEvent(x, y, vx, vy, damage) {
-            if (conn && conn.open) {
-                conn.send({
-                    type: 'shoot',
-                    x: x,
-                    y: y,
-                    vx: vx,
-                    vy: vy,
-                    damage: damage
-                });
+            const data = { type: 'shoot', x: x, y: y, vx: vx, vy: vy, damage: damage };
+            if (isHost) {
+                broadcast(data);
+            } else if (conn && conn.open) {
+                conn.send(data);
             }
         }
         
@@ -2362,12 +2350,14 @@ function startOfflineGame() {
             const currentMap = MAPS[gameState.selectedMap];
             
             if (isMultiplayer) {
-                remotePlayer.x = canvas.width * 0.75;
-                remotePlayer.y = canvas.height * 0.3;
-                remotePlayer.health = 100;
-                // Change local player start position
-                player.x = canvas.width * 0.25;
-                player.y = canvas.height * 0.7;
+                // remotePlayers populated over network
+                if (isHost) {
+                    player.x = canvas.width * 0.3;
+                    player.y = canvas.height * 0.7;
+                } else {
+                    player.x = canvas.width * 0.7;
+                    player.y = canvas.height * 0.3;
+                }
             }
             
             // Update HUD
@@ -2642,21 +2632,17 @@ function startOfflineGame() {
                 player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
                 
                 // Multiplayer position sync (every 80ms)
-                if (isMultiplayer && conn && conn.open && (now - lastPositionSync > 80)) {
+                if (isMultiplayer && ((conn && conn.open) || isHost) && (now - lastPositionSync > 80)) {
                     lastPositionSync = now;
                     sendPositionUpdate(player.x, player.y, player.health);
                 }
                 
-                // NEW: Host sends authoritative bots update every ~180ms to guest
-                if (isHost && isMultiplayer && conn && conn.open && (now - lastBotSync > 180)) {
+                if (isHost && isMultiplayer && connections.length > 0 && (now - lastBotSync > 180)) {
                     lastBotSync = now;
                     const minimalBots = enemies.map(e => ({
-                        x: e.x,
-                        y: e.y,
-                        health: e.health,
-                        size: e.size || 16
+                        x: e.x, y: e.y, health: e.health, size: e.size || 16
                     }));
-                    conn.send({ type: 'bots-update', bots: minimalBots });
+                    connections.forEach(c => { if (c.open) c.send({ type: 'bots-update', bots: minimalBots }); });
                 }
                 
                 // Reload logic
@@ -2905,37 +2891,34 @@ function startOfflineGame() {
                     }
                 }
                 
-                // PVP: Local bullets hit remote player
-                if (isMultiplayer && selectedGameMode === 'pvp') {
+                // Multiplayer: bullets hit any remote player ( >2 players support )
+                if (isMultiplayer && Object.keys(remotePlayers).length > 0) {
                     for (let b = bullets.length - 1; b >= 0; b--) {
                         const bullet = bullets[b];
                         if (bullet.isEnemy) continue;
-                        
-                        const dx = bullet.x - remotePlayer.x;
-                        const dy = bullet.y - remotePlayer.y;
-                        if (Math.hypot(dx, dy) < (remotePlayer.size || 18) + bullet.size + 10) {  // more forgiving hit radius for better feel in multiplayer with latency
-                            const dmg = bullet.damage || 22;
-                            if (conn && conn.open) {
-                                conn.send({
-                                    type: 'hit',
-                                    damage: dmg
-                                });
+                        let hitAny = false;
+                        Object.keys(remotePlayers).forEach(pid => {
+                            if (hitAny) return;
+                            const rp = remotePlayers[pid];
+                            if (Math.hypot(bullet.x - rp.x, bullet.y - rp.y) < (rp.size || 18) + bullet.size + 10) {
+                                const dmg = bullet.damage || 22;
+                                if (isHost) {
+                                    const tc = connections.find(c => c.peer === pid);
+                                    if (tc && tc.open) tc.send({ type: 'hit', damage: dmg });
+                                } else if (conn && conn.open) {
+                                    conn.send({ type: 'player-hit', targetPeerId: pid, damage: dmg });
+                                }
+                                for (let p = 0; p < 6; p++) {
+                                    particles.push({
+                                        x: bullet.x, y: bullet.y,
+                                        vx: (Math.random()-0.5)*3.5, vy: (Math.random()-0.5)*3.5,
+                                        life: 12, size: 2.5, color: '#ef4444'
+                                    });
+                                }
+                                bullets.splice(b, 1);
+                                hitAny = true;
                             }
-                            // Local hit particles on remote
-                            for (let p = 0; p < 6; p++) {
-                                particles.push({
-                                    x: bullet.x,
-                                    y: bullet.y,
-                                    vx: (Math.random() - 0.5) * 3.5,
-                                    vy: (Math.random() - 0.5) * 3.5,
-                                    life: 12,
-                                    size: 2.5,
-                                    color: '#ef4444'
-                                });
-                            }
-                            bullets.splice(b, 1);
-                            break;
-                        }
+                        });
                     }
                 }
                 
@@ -3392,58 +3375,53 @@ function startOfflineGame() {
                 }
                 ctx.restore();
                 
-                // Draw remote player (if multiplayer)
-                if (isMultiplayer) {
-                    // Shadow
-                    ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
-                    ctx.beginPath();
-                    ctx.ellipse(remotePlayer.x + 4, remotePlayer.y + 11, 17, 7, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Body with vest detail
-                    ctx.fillStyle = remotePlayer.color;
-                    ctx.beginPath();
-                    ctx.ellipse(remotePlayer.x, remotePlayer.y + 2, 17, 20, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Vest overlay
-                    ctx.fillStyle = '#1e2937';
-                    ctx.beginPath();
-                    ctx.ellipse(remotePlayer.x, remotePlayer.y + 1, 13, 15, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Simple pouch on remote
-                    ctx.fillStyle = '#334155';
-                    ctx.fillRect(remotePlayer.x - 5, remotePlayer.y + 3, 4, 5);
-                    ctx.fillRect(remotePlayer.x + 1, remotePlayer.y + 3, 4, 5);
-                    
-                    // Head / helmet
-                    ctx.fillStyle = '#1e2937';
-                    ctx.beginPath();
-                    ctx.ellipse(remotePlayer.x, remotePlayer.y - 6, 12, 13, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Visor line
-                    ctx.strokeStyle = '#64748b';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.ellipse(remotePlayer.x, remotePlayer.y - 4, 8, 5, 0, 0, Math.PI * 2);
-                    ctx.stroke();
-                    
-                    // Name tag + Health bar for remote player (exact name + live health)
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 11px Vazirmatn, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(remotePlayer.name || 'Opponent', remotePlayer.x, remotePlayer.y - 28);
-                    
-                    // Small health bar above the name
-                    const remoteHealthPct = Math.max(0, (remotePlayer.health || 100) / 100);
-                    ctx.fillStyle = '#334155';
-                    ctx.fillRect(remotePlayer.x - 20, remotePlayer.y - 38, 40, 5);
-                    ctx.fillStyle = remoteHealthPct > 0.5 ? '#22c55e' : (remoteHealthPct > 0.25 ? '#eab308' : '#ef4444');
-                    ctx.fillRect(remotePlayer.x - 20, remotePlayer.y - 38, 40 * remoteHealthPct, 5);
-                    
-                    ctx.textAlign = 'left';
+                // Draw ALL remote players (supports >2 players)
+                if (isMultiplayer && Object.keys(remotePlayers).length > 0) {
+                    Object.keys(remotePlayers).forEach(pid => {
+                        const rp = remotePlayers[pid];
+                        if (!rp) return;
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+                        ctx.beginPath();
+                        ctx.ellipse(rp.x + 4, rp.y + 11, 17, 7, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = rp.color || '#3b82f6';
+                        ctx.beginPath();
+                        ctx.ellipse(rp.x, rp.y + 2, 17, 20, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#1e2937';
+                        ctx.beginPath();
+                        ctx.ellipse(rp.x, rp.y + 1, 13, 15, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#334155';
+                        ctx.fillRect(rp.x - 5, rp.y + 3, 4, 5);
+                        ctx.fillRect(rp.x + 1, rp.y + 3, 4, 5);
+                        
+                        ctx.fillStyle = '#1e2937';
+                        ctx.beginPath();
+                        ctx.ellipse(rp.x, rp.y - 6, 12, 13, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.strokeStyle = '#64748b';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.ellipse(rp.x, rp.y - 4, 8, 5, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                        
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 11px Vazirmatn, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(rp.name || 'Player', rp.x, rp.y - 28);
+                        
+                        const rHealthPct = Math.max(0, (rp.health || 100) / 100);
+                        ctx.fillStyle = '#334155';
+                        ctx.fillRect(rp.x - 20, rp.y - 38, 40, 5);
+                        ctx.fillStyle = rHealthPct > 0.5 ? '#22c55e' : (rHealthPct > 0.25 ? '#eab308' : '#ef4444');
+                        ctx.fillRect(rp.x - 20, rp.y - 38, 40 * rHealthPct, 5);
+                        ctx.textAlign = 'left';
+                    });
                 }
                 
                 // Draw particles
@@ -3581,9 +3559,10 @@ function startOfflineGame() {
                 iconContainer.style.background = 'rgba(168, 85, 247, 0.15)';
                 title.textContent = 'نتایج Player vs Player';
                 const myK = kills || 0;
-                const oppK = (remotePlayer && remotePlayer.kills) || 0;
-                const bestPlayer = myK > oppK ? (gameState.playerName || 'شما') : (oppK > myK ? (remotePlayer.name || 'حریف') : 'مساوی');
-                const surv = (player && player.health > 0 ? 1 : 0) + (remotePlayer && remotePlayer.health > 0 ? 1 : 0);
+                const firstRemote = Object.values(remotePlayers || {})[0] || {};
+                const oppK = firstRemote.kills || 0;
+                const bestPlayer = myK > oppK ? (gameState.playerName || 'شما') : (oppK > myK ? (firstRemote.name || 'حریف') : 'مساوی');
+                const surv = (player && player.health > 0 ? 1 : 0) + ((firstRemote.health || 0) > 0 ? 1 : 0);
                 subtitle.innerHTML = `بهترین بازیکن: <b style="color:#c026d3">${bestPlayer}</b><br>شما: ${myK} کیل | حریف: ${oppK} کیل<br>تعداد بازماندگان: ${surv} نفر`;
             }
             
